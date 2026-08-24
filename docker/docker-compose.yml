@@ -1,0 +1,366 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      PORT: "3000"
+      JWT_SECRET: ${JWT_SECRET}
+      MAILER_APP_ID: mailer
+      MAILER_APP_NAME: Mailer
+      MAILER_OWNER_EMAIL: ${MAILER_OWNER_EMAIL}
+      MAILER_SERVICE_SECRET: ${MAILER_SERVICE_SECRET}
+      AUTH_SERVICE_URL: http://auth-service:3000
+      MAILER_TEMPLATE_DIR: /app/templates/standard.docx
+    volumes:
+      - ./templates:/app/templates:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - internal
+
+  auth-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${AUTH_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${AUTH_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${AUTH_POSTGRES_DB}
+    volumes:
+      - auth_pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AUTH_POSTGRES_USER} -d ${AUTH_POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  auth-service:
+    build: ./auth-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${AUTH_POSTGRES_USER}:${AUTH_POSTGRES_PASSWORD}@auth-db:5432/${AUTH_POSTGRES_DB}?sslmode=disable
+      PORT: "3000"
+      JWT_SECRET: ${JWT_SECRET}
+      APPS_REGISTER_SECRET: ${APPS_REGISTER_SECRET}
+      ALLOWED_EMAIL_DOMAIN: tn.ru
+      SMTP_HOST: host.docker.internal
+      SMTP_PORT: "25"
+      SMTP_FROM: ${SMTP_FROM}
+      SMTP_SKIP_VERIFY: "1"
+      MAILER_APP_ID: mailer
+      MAILER_APP_NAME: Mailer
+      MAILER_OWNER_EMAIL: ${MAILER_OWNER_EMAIL}
+      MAILER_SERVICE_SECRET: ${MAILER_SERVICE_SECRET}
+      DOCUMENTS_APP_ID: documents
+      DOCUMENTS_APP_NAME: Documents
+      DOCUMENTS_OWNER_EMAIL: ${DOCUMENTS_OWNER_EMAIL}
+      DOCUMENTS_SERVICE_SECRET: ${DOCUMENTS_SERVICE_SECRET}
+      LAB_APP_ID: lab
+      LAB_APP_NAME: Lab
+      LAB_OWNER_EMAIL: ${LAB_OWNER_EMAIL}
+      LAB_SERVICE_SECRET: ${LAB_SERVICE_SECRET}
+      EKN_APP_ID: ekn
+      EKN_APP_NAME: EKN
+      EKN_OWNER_EMAIL: ${EKN_OWNER_EMAIL}
+      EKN_SERVICE_SECRET: ${EKN_SERVICE_SECRET}
+      CONTACTS_APP_ID: contacts
+      CONTACTS_APP_NAME: Contacts
+      CONTACTS_OWNER_EMAIL: ${CONTACTS_OWNER_EMAIL}
+      CONTACTS_SERVICE_SECRET: ${CONTACTS_SERVICE_SECRET}
+      AGENT_APP_ID: agent
+      AGENT_APP_NAME: Agent
+      AGENT_OWNER_EMAIL: ${AGENT_OWNER_EMAIL}
+      AGENT_SERVICE_SECRET: ${AGENT_SERVICE_SECRET}
+      ADMIN_EMAILS: ${ADMIN_EMAILS}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    networks:
+      - internal
+
+  documents-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DOCUMENTS_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${DOCUMENTS_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${DOCUMENTS_POSTGRES_DB}
+    volumes:
+      - documents_pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DOCUMENTS_POSTGRES_USER} -d ${DOCUMENTS_POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  documents:
+    build: ./documents-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${DOCUMENTS_POSTGRES_USER}:${DOCUMENTS_POSTGRES_PASSWORD}@documents-db:5432/${DOCUMENTS_POSTGRES_DB}?sslmode=disable
+      PORT: "3000"
+      JWT_SECRET: ${JWT_SECRET}
+      DOCUMENTS_APP_ID: documents
+      DOCUMENTS_APP_NAME: Documents
+      DOCUMENTS_OWNER_EMAIL: ${DOCUMENTS_OWNER_EMAIL}
+      DOCUMENTS_SERVICE_SECRET: ${DOCUMENTS_SERVICE_SECRET}
+      AUTH_SERVICE_URL: http://auth-service:3000
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: sbe-doc
+    depends_on:
+      documents-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - internal
+
+  lab-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${LAB_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${LAB_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${LAB_POSTGRES_DB}
+    volumes:
+      - lab_pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${LAB_POSTGRES_USER} -d ${LAB_POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  lab:
+    build: ./lab-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${LAB_POSTGRES_USER}:${LAB_POSTGRES_PASSWORD}@lab-db:5432/${LAB_POSTGRES_DB}?sslmode=disable
+      PORT: "3000"
+      JWT_SECRET: ${JWT_SECRET}
+      LAB_APP_ID: lab
+      LAB_APP_NAME: Lab
+      LAB_OWNER_EMAIL: ${LAB_OWNER_EMAIL}
+      LAB_SERVICE_SECRET: ${LAB_SERVICE_SECRET}
+      AUTH_SERVICE_URL: http://auth-service:3000
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_BUCKET: sbe-doc
+    depends_on:
+      lab-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - internal
+
+  ekn-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${EKN_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${EKN_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${EKN_POSTGRES_DB}
+    volumes:
+      - ekn_pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${EKN_POSTGRES_USER} -d ${EKN_POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  ekn:
+    build: ./ekn-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${EKN_POSTGRES_USER}:${EKN_POSTGRES_PASSWORD}@ekn-db:5432/${EKN_POSTGRES_DB}?sslmode=disable
+      PORT: "3000"
+      JWT_SECRET: ${JWT_SECRET}
+      EKN_APP_ID: ekn
+      EKN_APP_NAME: EKN
+      EKN_OWNER_EMAIL: ${EKN_OWNER_EMAIL}
+      EKN_SERVICE_SECRET: ${EKN_SERVICE_SECRET}
+      AUTH_SERVICE_URL: http://auth-service:3000
+      QRC_API_TOKEN: ${QRC_API_TOKEN}
+      QRC_API_URL: ${QRC_API_URL}
+    depends_on:
+      ekn-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - internal
+
+  contacts-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${CONTACTS_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${CONTACTS_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${CONTACTS_POSTGRES_DB}
+    volumes:
+      - contacts_pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CONTACTS_POSTGRES_USER} -d ${CONTACTS_POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  contacts:
+    build: ./contacts-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${CONTACTS_POSTGRES_USER}:${CONTACTS_POSTGRES_PASSWORD}@contacts-db:5432/${CONTACTS_POSTGRES_DB}?sslmode=disable
+      PORT: "3000"
+      JWT_SECRET: ${JWT_SECRET}
+      CONTACTS_APP_ID: contacts
+      CONTACTS_APP_NAME: Contacts
+      CONTACTS_OWNER_EMAIL: ${CONTACTS_OWNER_EMAIL}
+      CONTACTS_SERVICE_SECRET: ${CONTACTS_SERVICE_SECRET}
+      AUTH_SERVICE_URL: http://auth-service:3000
+    depends_on:
+      contacts-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - internal
+
+  agent-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${AGENT_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${AGENT_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${AGENT_POSTGRES_DB}
+    volumes:
+      - agent_pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AGENT_POSTGRES_USER} -d ${AGENT_POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  agent:
+    build: ./agent-service
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      DATABASE_URL: postgres://${AGENT_POSTGRES_USER}:${AGENT_POSTGRES_PASSWORD}@agent-db:5432/${AGENT_POSTGRES_DB}?sslmode=disable
+      PORT: "3000"
+      JWT_SECRET: ${JWT_SECRET}
+      AGENT_APP_ID: agent
+      AGENT_APP_NAME: Agent
+      AGENT_OWNER_EMAIL: ${AGENT_OWNER_EMAIL}
+      AGENT_SERVICE_SECRET: ${AGENT_SERVICE_SECRET}
+      AUTH_SERVICE_URL: http://auth-service:3000
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      AGENT_S3_BUCKET: sbe-agent
+      MERMAID_SERVICE_URL: http://agent-mermaid:3000
+    depends_on:
+      agent-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+      agent-mermaid:
+        condition: service_started
+    networks:
+      - internal
+
+  agent-mermaid:
+    build: ./agent-mermaid
+    restart: unless-stopped
+    mem_limit: 1g
+    environment:
+      PORT: "3000"
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./www:/srv/www:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - documents
+      - lab
+      - ekn
+      - contacts
+      - agent
+      - auth-service
+    networks:
+      - internal
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    restart: unless-stopped
+    command: -H unix:///var/run/docker.sock
+    ports:
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - internal
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+  portainer_data:
+  auth_pgdata:
+  documents_pgdata:
+  lab_pgdata:
+  ekn_pgdata:
+  contacts_pgdata:
+  agent_pgdata:
+
+networks:
+  internal:
+    driver: bridge

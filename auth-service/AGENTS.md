@@ -1,0 +1,119 @@
+# AGENTS.md — auth-service
+
+Серверный Go-сервис авторизации («паспортный стол») для SBE-плагинов.
+Контейнер `auth-service` + отдельная БД `auth` (postgres `auth-db`).
+Деплой: `/opt/mailers/auth-service/` (копия этой папки).
+
+## Назначение
+
+- Ключ на пару `email + device_id`, доставка через exim (SMTP localhost:25).
+- JWT HS256 (общий `JWT_SECRET`) для plugin-services, TTL 1 ч.
+- Таблицы: `users`, `devices`, `keys`, `apps` (реестр plugin-services + сервисные секреты).
+- Ограничение домена email: `tn.ru` (env `ALLOWED_EMAIL_DOMAIN`).
+
+## Эндпоинты
+
+| Метод | Путь | Описание |
+|---|---|---|
+| GET | `/health` | статус + ping БД |
+| POST | `/auth/request-key` | `{email, device_id}` → ключ по SMTP |
+| POST | `/auth/activate-key` | `{email, device_id, key}` → статус `active` |
+| POST | `/auth/token` | `{key, app_id}` → JWT (app_id должен быть в `apps`) |
+| GET | `/auth/devices` | список устройств (Bearer <key>) |
+| DELETE | `/auth/devices/{device_id}` | отзыв устройства (Bearer <key>) |
+| GET | `/auth/presence` | кто онлайн (last_seen ≤30 мин) + всем пользователям last-seen для admin (Bearer <key>) |
+| POST | `/auth/news` | публикация новости; `visibility:'all', mandatory:false` — любой авторизованный, `restricted`/`mandatory` — только admin (Bearer <key>) |
+| GET | `/auth/news` | сообщения, видимые вызывающему, с флагом `read` (Bearer <key>) |
+| POST | `/auth/news/{id}/ack` | отметить прочитанным (Bearer <key>) |
+| GET | `/auth/news/{id}/reads` | кто из адресатов прочитал — только admin (Bearer <key>) |
+| POST | `/apps/register` | регистрация plugin-service |
+
+## Конфиг (env)
+
+`DATABASE_URL`, `JWT_SECRET`, `ALLOWED_EMAIL_DOMAIN`, `SMTP_HOST`/`SMTP_PORT`/`SMTP_FROM`/`SMTP_USER`/`SMTP_PASS`/`SMTP_SKIP_VERIFY`,
+`MAILER_APP_ID`/`MAILER_APP_NAME`/`MAILER_OWNER_EMAIL`/`MAILER_SERVICE_SECRET` (seed apps), `AUTH_TOKEN_TTL`,
+`APPS_REGISTER_SECRET` (мастер-секрет регистрации приложений), `RATE_LIMIT_PER_10MIN` (по умолч. 3), `MAX_PENDING_KEYS` (по умолч. 5),
+`ADMIN_EMAILS` (через запятую — кто видит `all_users` в `/auth/presence` и может слать `restricted`/`mandatory` новости).
+
+## Сборка / проверка
+
+```
+docker compose up -d --build auth-service        # на сервере
+docker compose exec auth-service wget -qO- http://localhost:3000/health
+```
+
+## История
+
+- **2026-08-17 — создание (Этап 1 плана 2026-08-16-sbe-server-auth-rights-plan.md).**
+  Собрано в образ `mailers-auth-service`, контейнер `auth-service` + `auth-db` запущены.
+  Миграции (`users`/`devices`/`keys`/`apps`) и seed приложения `mailer` выполняются при старте.
+  Маршрутизация в Caddy: `/auth/*`, `/apps/*`, `/health` → auth-service; `/api/*` → backend.
+- **2026-08-17 — фикс сборки:** убраны неиспользуемые импорты `pgxpool` из `migrate.go` и `seed.go`
+  (первая сборка падала: "imported and not used"). После правки сборка зелёная.
+- **2026-08-17 — SMTP через exim починен (3 правки):**
+  1) `email.go` переписан с `smtp.SendMail` на явный `smtp.Client`: STARTTLS теперь с
+     `SMTP_SKIP_VERIFY` (exim отдаёт самоподписанный сертификат без SAN → Go не мог проверить);
+     добавлена поддержка `SMTP_USER`/`SMTP_PASS` (внешний релей). `docker-compose.yml` → `SMTP_SKIP_VERIFY: "1"`.
+  2) На сервере: в `/etc/exim4/passwd` добавлен локальный отправитель
+     `noreply@epyur.fvds.ru:!:65534:65534:/var/mail::0:` (шаблон ispmanager требует `verify = sender`).
+  3) На сервере: в `/etc/exim4/relay_from_hosts` добавлено `172.16.0.0/12` (релей из docker-сети).
+  Проверено E2E: `request-key` → письмо доставлено на `polishchuk@tn.ru` (mx1.tn.ru, 250 Ok).
+  ⚠️ Правки exim — вручную на сервере, ispmanager может перезаписать при действиях в панели (см. weak-points.md A2/A3).
+- **2026-08-17 — проверка эндпоинтов (полный цикл):**
+  health, apps/register (upsert), request-key, activate-key (в т.ч. несоответствие device/email),
+  token (в т.ч. неактивированный ключ, неизвестный app_id), list devices, отзыв устройства →
+  после отзыва token выдаёт ошибку. Секрет приложения после теста `apps/register` восстановлен в БД.
+- **2026-08-17 — hardening (A3/A4/A5/A9 из weak-points.md):**
+  - **A4** — `apps/register` защищён: `authorizedRegister` (мастер-секрет `APPS_REGISTER_SECRET`
+    из env ИЛИ совпадение с текущим `service_secret` записи), иначе 403. Новое приложение — только
+    по мастер-секрету. Из `Caddyfile` удалён публичный `handle /apps/*` (регистрация — по внутренней сети).
+    Проверено: без секрета 403, неверный 403, существующий секрет ok, мастер ok, публичный `/apps/*` → fallback.
+  - **A5** — `requestLimitExceeded` в `request-key`: ≤ `RATE_LIMIT_PER_10MIN`=3 ключей за 10 мин на email
+    + ≤ `MAX_PENDING_KEYS`=5 pending-ключей; превышение → 429. Проверено: req1–3 ok, req4 → 429.
+  - **A3** — релей exim сужен с `172.16.0.0/12` до `172.18.0.0/16` (сеть `mailers_internal`);
+    проверено `exim -bh 172.18.0.3` → `250 Accepted`. Бэкап `relay_from_hosts.bak2`.
+  - **A9** — Portainer: учётка `epyur` (не admin), пароль утерян → сброшен через
+    `portainer/helper-reset-password` на volume `mailers_portainer_data` (compose-префикс `mailers_`;
+    см. weak-points.md A9), затем сменён через `PUT /api/users/1/passwd`, вход проверен.
+    Порт 9000 — только 127.0.0.1 (bind + nft).
+  - В `docker-compose.yml`/`.env` добавлен `APPS_REGISTER_SECRET`; в `.env.example` — плейсхолдер.
+  - Тестовые данные (устройства `aaaaaaaa-…`, app `newapp`) после проверок удалены из БД.
+  ⚠️ При добавлении новых compose-сетей — дополнить `relay_from_hosts` (см. weak-points.md A3).
+- **2026-08-18 — seed приложения `lab`:** `seedApps` дополнен `LAB_*` (app_id `lab`, owner
+  polishchuk@tn.ru, LAB_SERVICE_SECRET). На сервере пересобран `auth-service` (без этого
+  `/apps/register` для lab отвечал 403). Приложение `lab` зарегистрировано (см. lab-service/AGENTS.md).
+- **2026-08-20 — seed приложения `contacts`:** `seedApps` дополнен `CONTACTS_*` (app_id
+  `contacts`, owner polishchuk@tn.ru, CONTACTS_SERVICE_SECRET). На сервере пересобран
+  `auth-service`; приложение `contacts` зарегистрировано (см. contacts-service/AGENTS.md).
+- **2026-08-20 — seed приложения `agent`:** `seedApps` дополнен `AGENT_*` (app_id `agent`,
+  owner polishchuk@tn.ru, AGENT_SERVICE_SECRET). На сервере пересобран `auth-service`;
+  приложение `agent` зарегистрировано (см. agent-service/AGENTS.md).
+- **2026-08-22 — присутствие + канал «Новости» (для ЦУП/sbe-apstore):**
+  - Миграция: `devices.last_seen_at TIMESTAMPTZ`; таблицы `news_messages`/`news_recipients`/`news_reads`.
+  - `POST /auth/token` теперь пишет `last_seen_at = now()` для устройства сразу после успешной
+    валидации ключа — единая точка учёта активности для всех plugin-services (каждый сперва
+    получает здесь токен).
+  - Новое понятие «администратор»: `ADMIN_EMAILS` (env, через запятую) → `parseAdminEmails()`/`isAdmin()`.
+  - Новые роуты (все через существующий `requireKey`, Bearer <мастер-ключ устройства>):
+    `GET /auth/presence` (кто online за 30 мин + `all_users` c last-seen для admin),
+    `POST /auth/news`, `GET /auth/news`, `POST /auth/news/{id}/ack`, `GET /auth/news/{id}/reads` (admin).
+  - Решение по правам на `POST /auth/news`, отступающее от первоначального плана «только admin»:
+    общедоступная необязательная новость (`visibility:'all', mandatory:false`) разрешена ЛЮБОМУ
+    авторизованному пользователю — это нужно, чтобы `announceUpdate` любого SBE-плагина работал не
+    только с админского устройства; `restricted` или `mandatory` — только admin (403 иначе).
+  - `go build`/`go vet`/`go test` — чисто. Задеплоено на VDS: `ADMIN_EMAILS=polishchuk@tn.ru`
+    в `.env` (как и все остальные `*_OWNER_EMAIL`), `docker-compose.yml` обновлён,
+    `docker compose up -d --build auth-service`, health OK.
+  - **Фикс после первого деплоя**: `/auth/presence`/`/auth/devices`/`/auth/news*` авторизуются
+    мастер-ключом устройства через `requireKey` — **минуя** `/auth/token`, поэтому открытие
+    «Онлайн»/«Новости» само по себе не обновляло `last_seen_at` (пользователь не видел себя
+    online, admin-таблица показывала «никогда» даже для только что активного устройства).
+    Добавлен `touchLastSeen(ctx, deviceID)`, вызывается и из `handleToken`, и из `requireKey` —
+    теперь ЛЮБОЙ авторизованный запрос к auth-service (не только выдача JWT) считается
+    активностью. Проверено на живых данных: `SELECT last_seen_at FROM devices` — было `NULL`,
+    после повторного клика по «Онлайн» — актуальная метка времени. Передеплоено, health OK.
+
+## Статистика ошибок и отступлений
+
+- Правило проекта: импорты без неиспользуемых. Замечаний на текущий момент нет (после фикса 2026-08-17).
+- Известные ограничения: `smtp.PlainAuth` не используется без `SMTP_USER` (локальный exim без аутентификации).

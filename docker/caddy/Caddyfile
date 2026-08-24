@@ -1,0 +1,49 @@
+{
+	email epyur@ya.ru
+	acme_ca https://acme-v02.api.letsencrypt.org/directory
+}
+
+https://{$DOMAIN} {
+	encode gzip
+
+	handle /api/ekn/* {
+		reverse_proxy ekn:3000
+	}
+
+	handle /api/agent/* {
+		reverse_proxy agent:3000
+	}
+
+	handle /api/contacts/* {
+		reverse_proxy contacts:3000
+	}
+
+	handle /api/lab/* {
+		reverse_proxy lab:3000
+	}
+
+	handle /api/documents/* {
+		reverse_proxy documents:3000
+	}
+
+	handle /api/* {
+		reverse_proxy backend:3000
+	}
+
+	handle /auth/* {
+		reverse_proxy auth-service:3000
+	}
+
+	handle /health {
+		reverse_proxy auth-service:3000
+	}
+
+	handle /registry.json {
+		root * /srv/www
+		file_server
+	}
+
+	handle {
+		respond "Mailers stack is up"
+	}
+}
