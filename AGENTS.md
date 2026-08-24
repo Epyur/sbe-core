@@ -6,6 +6,14 @@ design-токены. **Не плагин** (нет `manifest.json`; Obsidian е�
 `../../sbe-core/src/...`; styles склеиваются в `styles.css` плагина через
 `build.onEnd` в его esbuild-конфиге. Никогда не публиковать как standalone-плагин.
 
+**Git-репозиторий заведён 2026-08-24** (`Epyur/sbe-core`, публичный) — раньше эта папка
+была без git вовсе. **Бэк общей инфраструктуры** — `auth-service/` (авторизация для
+ВСЕХ приложений) + `docker/` (docker-compose/Caddy/nftables стека) + `weak-points.md` —
+на отдельной ветке `backend` (main — чистый релизный срез исходников sbe-core, без
+бэка). Ни auth-service, ни docker не привязаны к одному плагину-потребителю — отсюда
+их дом здесь, а не в конкретном `sbe-*`. См. правило «Бэки в папках плагинов» в
+корневом `plugins/AGENTS.md` и указатель в `../server_back/AGENTS.md`.
+
 ## Структура
 
 - `src/types.ts` — реестр (`RegistryPluginEntry`, `RegistryFile`), `SbeApstoreApi`, `SbeLlmApi`, `SbeYougileApi`, `SbeServiceMap` (типизированный словарь сервисов).
