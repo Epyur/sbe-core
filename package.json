@@ -1,0 +1,11 @@
+{
+  "name": "sbe-core",
+  "version": "0.1.0",
+  "description": "SBE plugin system core: bridge (window.SBE), registry client, installer, design tokens",
+  "private": true,
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "obsidian": "^1.11.4",
+    "typescript": "^5.8.3"
+  }
+}

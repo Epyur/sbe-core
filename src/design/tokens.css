@@ -1,0 +1,224 @@
+/* SBE design tokens — выровнены со словарём TN Life UI kit.
+ * Источник словаря: C:\Users\adm\Yandex.Disk\Загрузки\doc\uikit\variables.css (+ variables-dark.css).
+ *
+ * Слои:
+ *   1. `--tn-*` — примитивы (обратная совместимость; имена и значения НЕ менять).
+ *   2. Сырая палитра TN Life (`--tn-palette-*`) — ключевые ступени neutral/red/blue/green/orange.
+ *   3. Семантические токены TN Life (`--content-*`, `--background-*`, `--border-*`) —
+ *      точные имена из Life; в Obsidian разрешаются через палитру, в Life — перекрываются его токенами.
+ *   4. `.tn-dark-theme` — значения тёмной темы из variables-dark.css (opt-in).
+ *
+ * Правило: новые компоненты SBE должны использовать семантические токены (слой 3),
+ * а не примитивы, чтобы перенос в Vue (TN Life) был механическим.
+ */
+
+/* Слой 1. Примитивы (обратная совместимость) */
+:root {
+  --tn-bg: #f4f6fa;
+  --tn-card: #ffffff;
+  --tn-border: #e3e8f0;
+  --tn-text: #1c2433;
+  --tn-muted: #67748e;
+  --tn-brand: #e01f26;
+  --tn-brand-dark: #c21820;
+  --tn-sidebar: #171e2b;
+  --tn-sidebar-text: #aab3c5;
+  --tn-sidebar-active: #e01f26;
+  --tn-ok: #16a34a;
+  --tn-warn: #d97706;
+  --tn-err: #dc2626;
+  --tn-radius: 10px;
+}
+
+/* Слой 2. Сырая палитра TN Life (ключевые ступени) */
+:root {
+  --tn-palette-neutral-white: #ffffff;
+  --tn-palette-neutral-black: #000000;
+  --tn-palette-neutral-5: #fcfcfd;
+  --tn-palette-neutral-10: #f9f9fa;
+  --tn-palette-neutral-15: #f3f5f7;
+  --tn-palette-neutral-20: #e6e8ed;
+  --tn-palette-neutral-25: #d7dae1;
+  --tn-palette-neutral-30: #c8ccd6;
+  --tn-palette-neutral-35: #bcc1ce;
+  --tn-palette-neutral-40: #abb0c1;
+  --tn-palette-neutral-45: #9ca3b6;
+  --tn-palette-neutral-50: #8890a7;
+  --tn-palette-neutral-55: #7a879d;
+  --tn-palette-neutral-60: #667387;
+  --tn-palette-neutral-65: #4e5867;
+  --tn-palette-neutral-70: #444c59;
+  --tn-palette-neutral-75: #3b434f;
+  --tn-palette-neutral-80: #2d333c;
+  --tn-palette-neutral-85: #292f37;
+  --tn-palette-neutral-90: #262a32;
+  --tn-palette-neutral-95: #22262d;
+  --tn-palette-neutral-100: #1e2228;
+
+  --tn-palette-red-55: #eb4f56;
+  --tn-palette-red-60: #e11b11;
+  --tn-palette-red-65: #ae1603;
+  --tn-palette-red-70: #961500;
+  --tn-palette-red-75: #841500;
+  --tn-palette-red-80: #670f00;
+
+  --tn-palette-blue-50: #2b91ff;
+  --tn-palette-blue-55: #1284ff;
+  --tn-palette-blue-60: #006ee4;
+  --tn-palette-blue-70: #004998;
+  --tn-palette-blue-75: #004186;
+
+  --tn-palette-green-50: #00a73b;
+  --tn-palette-green-55: #009c37;
+
+  --tn-palette-orange-40: #ff8a0c;
+}
+
+/* Слой 3. Семантические токены TN Life (светлая тема) */
+:root {
+  /* content */
+  --content-primary-a-enabled: var(--tn-palette-neutral-100);
+  --content-primary-a-hover: var(--tn-palette-neutral-70);
+  --content-primary-a-pressed: var(--tn-palette-neutral-100);
+  --content-primary-a-disabled: var(--tn-palette-neutral-35);
+  --content-primary-b-enabled: var(--tn-palette-neutral-white);
+  --content-primary-b-hover: var(--tn-palette-neutral-white);
+  --content-primary-b-pressed: var(--tn-palette-neutral-white);
+  --content-primary-b-disabled: var(--tn-palette-neutral-35);
+  --content-secondary-enabled: var(--tn-palette-neutral-60);
+  --content-secondary-hover: var(--tn-palette-neutral-55);
+  --content-secondary-pressed: var(--tn-palette-neutral-65);
+  --content-secondary-disabled: var(--tn-palette-neutral-35);
+  --content-tertiary-enabled: var(--tn-palette-neutral-45);
+  --content-tertiary-hover: var(--tn-palette-neutral-40);
+  --content-tertiary-pressed: var(--tn-palette-neutral-55);
+  --content-tertiary-disabled: var(--tn-palette-neutral-35);
+  --content-accent-enabled: var(--tn-palette-red-60);
+  --content-accent-hover: var(--tn-palette-red-65);
+  --content-accent-pressed: var(--tn-palette-red-70);
+  --content-accent-disabled: var(--tn-palette-neutral-35);
+  --content-system-positive: var(--tn-palette-green-55);
+  --content-system-negative: var(--tn-palette-red-60);
+  --content-system-warning: var(--tn-palette-orange-40);
+  --content-system-neutral: var(--tn-palette-neutral-65);
+  --content-action-enabled: var(--tn-palette-blue-55);
+  --content-action-hover: var(--tn-palette-blue-60);
+  --content-action-pressed: var(--tn-palette-blue-75);
+  --content-action-disabled: var(--tn-palette-neutral-35);
+
+  /* background */
+  --background-primary-a-enabled: var(--tn-palette-neutral-white);
+  --background-primary-a-hover: var(--tn-palette-neutral-5);
+  --background-primary-a-pressed: var(--tn-palette-neutral-10);
+  --background-primary-a-disabled: var(--tn-palette-neutral-10);
+  --background-primary-b-enabled: var(--tn-palette-neutral-100);
+  --background-primary-b-hover: var(--tn-palette-neutral-70);
+  --background-primary-b-pressed: var(--tn-palette-neutral-black);
+  --background-primary-b-disabled: var(--tn-palette-neutral-10);
+  --background-secondary-a-enabled: var(--tn-palette-neutral-15);
+  --background-secondary-a-hover: var(--tn-palette-neutral-20);
+  --background-secondary-a-pressed: var(--tn-palette-neutral-25);
+  --background-secondary-a-disabled: var(--tn-palette-neutral-10);
+  --background-secondary-enabled: var(--background-secondary-a-enabled);
+  --background-secondary-hover: var(--background-secondary-a-hover);
+  --background-secondary-pressed: var(--background-secondary-a-pressed);
+  --background-secondary-disabled: var(--background-secondary-a-disabled);
+  --background-tertiary-enabled: var(--tn-palette-neutral-20);
+  --background-tertiary-hover: var(--tn-palette-neutral-25);
+  --background-tertiary-pressed: var(--tn-palette-neutral-30);
+  --background-tertiary-disabled: var(--tn-palette-neutral-10);
+  --background-accent-enabled: var(--tn-palette-red-60);
+  --background-accent-hover: var(--tn-palette-red-65);
+  --background-accent-pressed: var(--tn-palette-red-70);
+  --background-accent-disabled: var(--tn-palette-neutral-10);
+
+  /* border */
+  --border-primary-a-enabled: var(--tn-palette-neutral-100);
+  --border-primary-a-hover: var(--tn-palette-neutral-70);
+  --border-primary-a-pressed: var(--tn-palette-neutral-100);
+  --border-primary-a-disabled: var(--tn-palette-neutral-20);
+  --border-primary-enabled: var(--border-primary-a-enabled);
+  --border-primary-hover: var(--border-primary-a-hover);
+  --border-primary-pressed: var(--border-primary-a-pressed);
+  --border-primary-disabled: var(--border-primary-a-disabled);
+  --border-secondary-enabled: var(--tn-palette-neutral-25);
+  --border-secondary-hover: var(--tn-palette-neutral-30);
+  --border-secondary-pressed: var(--tn-palette-neutral-35);
+  --border-secondary-disabled: var(--tn-palette-neutral-20);
+  --border-accent-enabled: var(--tn-palette-red-60);
+  --border-accent-hover: var(--tn-palette-red-65);
+  --border-accent-pressed: var(--tn-palette-red-70);
+  --border-accent-disabled: var(--tn-palette-neutral-20);
+}
+
+/* Слой 4. Тёмная тема (opt-in: класс .tn-dark-theme на body/контейнере) */
+.tn-dark-theme {
+  --content-primary-a-enabled: var(--tn-palette-neutral-15);
+  --content-primary-a-hover: var(--tn-palette-neutral-30);
+  --content-primary-a-pressed: var(--tn-palette-neutral-25);
+  --content-primary-a-disabled: var(--tn-palette-neutral-75);
+  --content-primary-b-enabled: var(--tn-palette-neutral-15);
+  --content-primary-b-hover: var(--tn-palette-neutral-30);
+  --content-primary-b-pressed: var(--tn-palette-neutral-25);
+  --content-primary-b-disabled: var(--tn-palette-neutral-75);
+  --content-secondary-enabled: var(--tn-palette-neutral-60);
+  --content-secondary-hover: var(--tn-palette-neutral-65);
+  --content-secondary-pressed: var(--tn-palette-neutral-75);
+  --content-secondary-disabled: var(--tn-palette-neutral-75);
+  --content-tertiary-enabled: var(--tn-palette-neutral-65);
+  --content-tertiary-hover: var(--tn-palette-neutral-55);
+  --content-tertiary-pressed: var(--tn-palette-neutral-70);
+  --content-tertiary-disabled: var(--tn-palette-neutral-75);
+  --content-accent-enabled: var(--tn-palette-red-65);
+  --content-accent-hover: var(--tn-palette-red-75);
+  --content-accent-pressed: var(--tn-palette-red-80);
+  --content-accent-disabled: var(--tn-palette-neutral-75);
+  --content-system-neutral: var(--tn-palette-neutral-30);
+  --content-action-enabled: var(--tn-palette-blue-50);
+  --content-action-hover: var(--tn-palette-blue-60);
+  --content-action-pressed: var(--tn-palette-blue-70);
+  --content-action-disabled: var(--tn-palette-neutral-75);
+
+  --background-primary-a-enabled: var(--tn-palette-neutral-100);
+  --background-primary-a-hover: var(--tn-palette-neutral-95);
+  --background-primary-a-pressed: var(--tn-palette-neutral-90);
+  --background-primary-a-disabled: var(--tn-palette-neutral-90);
+  --background-primary-b-enabled: var(--tn-palette-neutral-40);
+  --background-primary-b-hover: var(--tn-palette-neutral-50);
+  --background-primary-b-pressed: var(--tn-palette-neutral-55);
+  --background-primary-b-disabled: var(--tn-palette-neutral-90);
+  --background-secondary-a-enabled: var(--tn-palette-neutral-90);
+  --background-secondary-a-hover: var(--tn-palette-neutral-85);
+  --background-secondary-a-pressed: var(--tn-palette-neutral-95);
+  --background-secondary-a-disabled: var(--tn-palette-neutral-90);
+  --background-secondary-enabled: var(--background-secondary-a-enabled);
+  --background-secondary-hover: var(--background-secondary-a-hover);
+  --background-secondary-pressed: var(--background-secondary-a-pressed);
+  --background-secondary-disabled: var(--background-secondary-a-disabled);
+  --background-tertiary-enabled: var(--tn-palette-neutral-80);
+  --background-tertiary-hover: var(--tn-palette-neutral-75);
+  --background-tertiary-pressed: var(--tn-palette-neutral-80);
+  --background-tertiary-disabled: var(--tn-palette-neutral-90);
+  --background-accent-enabled: var(--tn-palette-red-65);
+  --background-accent-hover: var(--tn-palette-red-75);
+  --background-accent-pressed: var(--tn-palette-red-80);
+  --background-accent-disabled: var(--tn-palette-neutral-90);
+
+  --border-primary-a-enabled: var(--tn-palette-neutral-white);
+  --border-primary-a-hover: var(--tn-palette-neutral-20);
+  --border-primary-a-pressed: var(--tn-palette-neutral-25);
+  --border-primary-a-disabled: var(--tn-palette-neutral-90);
+  --border-primary-enabled: var(--border-primary-a-enabled);
+  --border-primary-hover: var(--border-primary-a-hover);
+  --border-primary-pressed: var(--border-primary-a-pressed);
+  --border-primary-disabled: var(--border-primary-a-disabled);
+  --border-secondary-enabled: var(--tn-palette-neutral-80);
+  --border-secondary-hover: var(--tn-palette-neutral-75);
+  --border-secondary-pressed: var(--tn-palette-neutral-75);
+  --border-secondary-disabled: var(--tn-palette-neutral-80);
+  --border-accent-disabled: var(--tn-palette-neutral-90);
+}
+
+.tn-dark-theme_no-transition * {
+  transition: none !important;
+}

@@ -1,0 +1,96 @@
+# AGENTS.md — sbe-core (SBE Plugin System core)
+
+Source-only пакет системы SBE: общие типы, мост, клиент реестра, установщик и
+design-токены. **Не плагин** (нет `manifest.json`; Obsidian его игнорирует).
+Встраивается в каждый SBE-плагин при сборке через относительные импорты
+`../../sbe-core/src/...`; styles склеиваются в `styles.css` плагина через
+`build.onEnd` в его esbuild-конфиге. Никогда не публиковать как standalone-плагин.
+
+## Структура
+
+- `src/types.ts` — реестр (`RegistryPluginEntry`, `RegistryFile`), `SbeApstoreApi`, `SbeLlmApi`, `SbeYougileApi`, `SbeServiceMap` (типизированный словарь сервисов).
+- `src/bridge.ts` — мост `window.SBE`: `publishService`/`unpublishService`/`getServiceSync`/`getService` (поллинг 200 мс, таймаут 15 с, понятная ошибка с именем плагина).
+- `src/registry.ts` — `DEFAULT_REGISTRY_URL` (`raw.githubusercontent.com/Epyur/sbe-apstore-registry/main/registry.json`) + типы.
+- `src/installer.ts` — скачивание файлов плагина с `main`-ветки, запись адаптером, `require.cache` очистка.
+- `src/utils/errors.ts` — `errorMessage(e: unknown)` для всех `catch`.
+- `src/design/tokens.css` + `components.css` — дизайн-система SBE (`tn-*`).
+
+## Ключевые решения
+
+- Мост: глобальный `window.SBE`, услуги публикуются при `onload` плагина, снимаются в `onunload`. Порядок загрузки плагинов не важен — `getService` поллит.
+- `getService` бросает `Сервис «{id}» недоступен. Установите и включите плагин «{имя}» из SBE Apstore` (имена в `getServiceName()`).
+- `SbeLlmApi` — центр хранит только `apiUrl` + ключ; `getStatus(): {configured, apiUrl}`, без `resolveModel`/моделей. Модель и промты — у потребителя.
+
+## История работ
+
+### 2026-08-22 — присутствие + новости в SbeAuthApi/SbeApstoreApi
+- `SbeAuthApi`: новые методы `getPresence()`, `listNews()`, `createNews()`, `ackNews()`,
+  `getNewsReads()` + типы `PresenceInfo`, `NewsItem`, `CreateNewsInput`, `NewsReadStatus`
+  (соответствуют новым эндпоинтам `auth-service`, см. server_back/auth-service/AGENTS.md).
+- `SbeApstoreApi`: новый метод `announceUpdate({appId, appName, version, summary})` — любой
+  SBE-плагин публикует в канал «Новости» сообщение о своём обновлении (общий доступ, без
+  авто-открытия) через `getService('sbe-apstore')`.
+- Тип `AnnounceUpdateInput`.
+- Реализация и версия — только в `sbe-apstore` (единственный потребитель/реализатор на
+  данный момент); по политике ниже (2026-08-20) остальные плагины НЕ пересобирались/не
+  бампались — изменение аддитивное, `announceUpdate` пока никем не вызывается (это отдельная,
+  более крупная задача — правка `onload()` каждого плагина).
+
+### 2026-08-20 — SbeContactsApi; политика пересборки изменена
+- Добавлены `SbeContactsApi` (extends `SbeOpenableApi`), `'sbe-contacts'` в `SbeServiceMap`,
+  `getServiceName` → «Контакты».
+- Создан плагин `sbe-contacts` (v0.1.1). В этой сессии впервые пересобраны и подняты версии
+  у 9 существующих плагинов — **впредь так НЕ делаем** (решение пользователя 2026-08-20):
+  изменения sbe-core аддитивные, существующие плагины пересобираются/бампятся **только при
+  изменениях по существу в самом плагине** (реальные баги, добавление/удаление функциональности).
+  Исключение — новый плагин (нужен актуальный sbe-core при первой сборке).
+
+### 2026-08-18 — SbeLimsApi (Этап 5-6 плана sbe-lims)
+- Добавлены `SbeLimsApi` (extends `SbeOpenableApi`), `'sbe-lims'` в `SbeServiceMap`,
+  `getServiceName` → «ЛИМС».
+- Создан плагин `sbe-lims` (v0.1.0); пересобраны все SBE-плагины (2026-08-18, после этой
+  правки: sbe-apstore/sbe-calendar/sbe-documents/sbe-ekn/sbe-lims/sbe-llm в 17:00-17:10,
+  sbe-mailer/sbe-presentations/sbe-requests/sbe-tasks/sbe-yougile при сверке сборок позже).
+  tsc/build — зелёные.
+- Реестр `sbe-lims` добавлен и синхронизирован на сервер; `community-plugins.json` дополнен;
+  git-репо `Epyur/sbe-lims` создано и запушено (2026-08-18).
+
+### 2026-08-18 — SbeRequestsApi (Этап 2 плана sbe-requests)
+- Добавлены `SbeRequestsApi` (extends `SbeOpenableApi`), `'sbe-requests'` в `SbeServiceMap`,
+  `getServiceName` → «Заявки на испытания».
+- Пересобраны все 8 SBE-плагинов (в т.ч. новый sbe-requests 0.1.0). tsc/build — зелёные.
+
+### 2026-08-17 — Дизайн-токены выровнены со словарём TN Life UI kit (аддитивный рефактор)
+- `src/design/tokens.css` перестроен по слоям (обратная совместимость сохранена):
+  1) примитивы `--tn-*` (имена/значения не менялись) → 2) сырая палитра `--tn-palette-*`
+  (ключевые ступени neutral/red/blue/green/orange из `uikit/variables.css`) → 3) семантические
+  токены TN Life `--content-*`/`--background-*`/`--border-*` (точные имена Life) → 4) `.tn-dark-theme`
+  (значения из `variables-dark.css`, opt-in).
+- Правило для новых компонентов: использовать семантические токены (слой 3), не примитивы —
+  перенос в Vue/Life станет механическим.
+- Существующие плагины не затронуты: ни один `--tn-*`/класс не удалён/не переименован.
+  Пересобраны потребители: sbe-apstore 0.3.0, sbe-tasks 0.1.4, sbe-calendar 0.1.2 (build ok).
+
+### 2026-08-17 — SbeAuthApi (Этап 2 плана 2026-08-16-sbe-server-auth-rights-plan)
+- `SbeApstoreApi` расширен подсервисом `auth: SbeAuthApi` (ключ на email+device_id,
+  JWT для plugin-services). Новые типы: `SbeAuthApi`, `DeviceInfo`.
+- В `RegistryPluginEntry` добавлено поле `ownerEmail` (источник первого админа
+  plugin-service, используется на Этапе 3/4).
+- Потребители с этим набором типов пересобраны: sbe-apstore 0.3.0. У sbe-core нет
+  собственной версии (source-only).
+
+### 2026-08-14 — v0.1.0 (создание)
+- Создан по дизайну `docs/superpowers/specs/2026-08-14-sbe-plugin-system-design.md`.
+- `npx tsc --noEmit` EXIT=0.
+- **2026-08-14 (sbe-llm/sbe-presentations)**: `SbeLlmApi` переработан — убраны `resolveModel`, `getStatus().models/defaultModel`; добавлен `ask(question, {system?, context?, history?, model?})`. В `bridge.ts` сообщение об ошибке таймаута дополнено именем плагина (`getServiceName`). Потребители: `sbe-llm` (publish), `sbe-presentations` (getService).
+- **Примечание конвенции**: с 2026-08-14 каждая папка плагина ведёт свой `AGENTS.md` (история) + `specification.md`. Этот файл создан задним числом по конвенции.
+- **2026-08-15 (sbe-apstore v0.2.1)**: строка «SBE Apstore» в `bridge.ts` (ошибка таймаута, `getServiceName`) и `installer.ts` (Notice) заменена на «ЦУП СБЕ ПМиПИР». Пересобраны все 4 SBE-плагина.
+- **2026-08-15 (sbe-tasks)**: `SbeYougileApi.client` расширен — `getColumns(boardId?)`, `getColumnById`, `getTaskChatSubscribers`; добавлен `SbeTasksApi` в `SbeServiceMap`. Пересобраны sbe-apstore/sbe-llm/sbe-presentations/sbe-yougile/sbe-tasks. Версии потребителей: sbe-apstore 0.2.2, sbe-llm 0.1.1, sbe-presentations 0.2.1, sbe-yougile 0.1.1. У sbe-core нет собственной версии (source-only, без manifest) и нет git-репозитория.
+
+## Статистика ошибок и отступлений
+
+- Нарушений нет: `window.setTimeout` в `bridge.ts` — корректно; `instanceof Error` в `utils/errors.ts` — реализация самого `errorMessage()`. 0 `any`, 0 `fetch`, 0 инлайн-стилей.
+
+## Правила
+
+- `catch(e: unknown)` + `errorMessage()`; `requestUrl()`; `window.setTimeout()`; без `any`; классы `tn-*`; UI на русском.

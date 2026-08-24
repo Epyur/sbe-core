@@ -1,0 +1,233 @@
+/* SBE design system — компоненты в стилистике tn-life-ui. Все классы с префиксом tn-. */
+
+.tn-card {
+  background: var(--tn-card);
+  border: 1px solid var(--tn-border);
+  border-radius: var(--tn-radius);
+  padding: 20px;
+  margin-bottom: 18px;
+}
+
+.tn-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.tn-card-head h3 { font-size: 15px; margin: 0; }
+
+.tn-muted { color: var(--tn-muted); }
+.tn-empty {
+  text-align: center;
+  color: var(--tn-muted);
+  padding: 18px;
+}
+
+/* ---------- Кнопки ---------- */
+.tn-btn {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #fff;
+  transition: all .15s;
+}
+.tn-btn:disabled { opacity: .55; cursor: not-allowed; }
+.tn-btn-primary { background: var(--tn-brand); color: #fff; }
+.tn-btn-primary:hover:not(:disabled) { background: var(--tn-brand-dark); }
+.tn-btn-ghost { border-color: var(--tn-border); color: var(--tn-text); background: #fff; }
+.tn-btn-ghost:hover:not(:disabled) { border-color: var(--tn-brand); color: var(--tn-brand); }
+.tn-btn-link { background: none; color: var(--tn-brand); padding: 4px 6px; font-weight: 600; }
+.tn-btn-link.danger { color: var(--tn-err); }
+.tn-btn-block { display: block; width: 100%; margin-bottom: 10px; }
+
+/* ---------- Таблицы ---------- */
+.tn-table-wrap { overflow-x: auto; }
+.tn-table { width: 100%; border-collapse: collapse; }
+.tn-table th, .tn-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--tn-border);
+  white-space: nowrap;
+}
+.tn-table th {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--tn-muted);
+}
+.tn-table tbody tr:hover { background: #f8f9fc; }
+.tn-table tbody tr { cursor: pointer; }
+
+/* ---------- Краткий вид протокола (HTML с сервера, вставлен как innerHTML) ----------
+   2026-08-24: короткий вид (renderShortView в sbe-lims/sbe-requests) извлекает из
+   ответа сервера ТОЛЬКО doc.body.innerHTML — <head><style> сервера туда не доходит
+   (иначе глобальные селекторы протёкли бы на весь Obsidian) — поэтому таблицы
+   результатов внутри показывались БЕЗ границ/выравнивания, хотя те же таблицы в
+   модалке протокола (iframe с srcdoc, серверный <style> применяется целиком) и в
+   скачанном DOCX/HTML — с границами и центрированием. Этот блок зеркалит стиль
+   таблиц из protocol.go (protocolHTML) для контейнера, в который вставлен
+   короткий вид — оборачивать инъекцию классом .tn-protocol-html. */
+.tn-protocol-html table { border-collapse: collapse; margin: 8px 0; }
+.tn-protocol-html td, .tn-protocol-html th {
+  border: 1px solid #999;
+  padding: 4px 8px;
+  font-size: 13px;
+  text-align: center;
+}
+.tn-protocol-html th { background: #f0f0f0; }
+
+/* ---------- Бейджи ---------- */
+.tn-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tn-badge-ok { background: #dcfce7; color: #15803d; }
+.tn-badge-warn { background: #fef3c7; color: #b45309; }
+.tn-badge-info { background: #dbeafe; color: #1d4ed8; }
+.tn-badge-err { background: #fee2e2; color: #b91c1c; }
+.tn-badge-muted { background: #e5e7eb; color: #4b5563; }
+.tn-badge-brand { background: #fdf0f0; color: var(--tn-brand); }
+
+/* ---------- Формы / фильтры ---------- */
+.tn-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+}
+.tn-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--tn-muted);
+  font-weight: 600;
+}
+.tn-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.tn-form-grid label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; }
+.tn-form-grid .span2 { grid-column: span 2; }
+.tn-actions { display: flex; gap: 12px; margin-top: 20px; }
+
+/* ---------- Модал ---------- */
+.tn-modal-back {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 22, .55);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.tn-modal {
+  background: #fff;
+  border-radius: 14px;
+  width: 100%;
+  max-width: 560px;
+  padding: 22px;
+}
+.tn-modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.tn-modal-x { background: none; border: none; font-size: 18px; color: var(--tn-muted); cursor: pointer; }
+.tn-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
+.tn-kv div { display: flex; flex-direction: column; gap: 3px; }
+.tn-kv div.span2 { grid-column: span 2; }
+.tn-kv span { font-size: 12px; color: var(--tn-muted); }
+.tn-kv b { font-weight: 600; }
+
+/* ---------- Тосты ---------- */
+.tn-toasts {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tn-toast {
+  background: #fff;
+  border-left: 4px solid var(--tn-ok);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .14);
+  padding: 12px 16px;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+}
+.tn-toast b { font-size: 14px; }
+.tn-toast span { font-size: 13px; color: var(--tn-muted); }
+.tn-toast-error { border-left-color: var(--tn-err); }
+.tn-toast-warn { border-left-color: var(--tn-warn); }
+
+/* ---------- Навигация (тёмный сайдбар) ---------- */
+.tn-nav {
+  background: var(--tn-sidebar);
+  color: var(--tn-sidebar-text);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  border-radius: var(--tn-radius);
+}
+.tn-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--tn-sidebar-text);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.tn-nav-item:hover { background: rgba(255, 255, 255, .06); color: #fff; }
+.tn-nav-item.active { background: var(--tn-sidebar-active); color: #fff; }
+
+/* ---------- Аватар / статистика ---------- */
+.tn-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--tn-brand);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+.tn-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.tn-stat-card {
+  background: var(--tn-card);
+  border: 1px solid var(--tn-border);
+  border-radius: var(--tn-radius);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tn-stat-num { font-size: 26px; font-weight: 800; color: var(--tn-brand); }
+.tn-stat-card span:last-child { color: var(--tn-muted); font-size: 12px; }
+
+/* ---------- Карточка плагина ---------- */
+.tn-plugin-card {
+  background: var(--tn-card);
+  border: 1px solid var(--tn-border);
+  border-radius: var(--tn-radius);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tn-plugin-card h4 { margin: 0; font-size: 15px; }
+.tn-plugin-desc { color: var(--tn-muted); font-size: 13px; line-height: 1.4; }
+.tn-plugin-meta { font-size: 12px; color: var(--tn-muted); }
