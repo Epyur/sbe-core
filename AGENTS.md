@@ -6,6 +6,14 @@ design-токены. **Не плагин** (нет `manifest.json`; Obsidian е�
 `../../sbe-core/src/...`; styles склеиваются в `styles.css` плагина через
 `build.onEnd` в его esbuild-конфиге. Никогда не публиковать как standalone-плагин.
 
+**Git-репозиторий заведён 2026-08-24** (`Epyur/sbe-core`, публичный) — раньше эта папка
+была без git вовсе. **Бэк общей инфраструктуры** — `auth-service/` (авторизация для
+ВСЕХ приложений) + `docker/` (docker-compose/Caddy/nftables стека) + `weak-points.md` —
+на отдельной ветке `backend` (main — чистый релизный срез исходников sbe-core, без
+бэка). Ни auth-service, ни docker не привязаны к одному плагину-потребителю — отсюда
+их дом здесь, а не в конкретном `sbe-*`. См. правило «Бэки в папках плагинов» в
+корневом `plugins/AGENTS.md` и указатель в `../server_back/AGENTS.md`.
+
 ## Структура
 
 - `src/types.ts` — реестр (`RegistryPluginEntry`, `RegistryFile`), `SbeApstoreApi`, `SbeLlmApi`, `SbeYougileApi`, `SbeServiceMap` (типизированный словарь сервисов).
@@ -22,6 +30,16 @@ design-токены. **Не плагин** (нет `manifest.json`; Obsidian е�
 - `SbeLlmApi` — центр хранит только `apiUrl` + ключ; `getStatus(): {configured, apiUrl}`, без `resolveModel`/моделей. Модель и промты — у потребителя.
 
 ## История работ
+
+### 2026-08-25 — управление секретами приложений и динамический реестр (ЦУП)
+- `SbeAuthApi`: новые методы + типы:
+  - `manageAppSecret({appId, action: 'status'|'sync'|'rotate'})` → `ManageAppSecretResult`
+    — статус/синхронизация/ротация `service_secret` приложения (только администратор);
+  - `listRegistryAdditions()`, `addRegistryPlugin(plugin)`, `removeRegistryAddition(id)`
+    + типы `RegistryAddition`, `RegistryPluginInput` — динамический реестр плагинов
+    (админ добавляет плагин из ЦУП, он сразу появляется в `/registry.json`).
+- Реализация на сервере — auth-service (ветка `backend`, см. его AGENTS.md); UI — ЦУП
+  (sbe-apstore 0.3.6). Потребители не пересобирались, кроме использующих метод.
 
 ### 2026-08-22 — присутствие + новости в SbeAuthApi/SbeApstoreApi
 - `SbeAuthApi`: новые методы `getPresence()`, `listNews()`, `createNews()`, `ackNews()`,

@@ -116,6 +116,55 @@ export interface SbeAuthApi {
   ackNews(id: number): Promise<void>;
   /** Только для администратора — кто из адресатов прочитал сообщение. */
   getNewsReads(id: number): Promise<NewsReadStatus[]>;
+  /** Только для администратора — статус/синхронизация/ротация service_secret приложения. */
+  manageAppSecret(input: ManageAppSecretInput): Promise<ManageAppSecretResult>;
+  /** Только для администратора — список добавленных в динамический реестр плагинов. */
+  listRegistryAdditions(): Promise<RegistryAddition[]>;
+  /** Только для администратор — добавить плагин в динамический реестр. */
+  addRegistryPlugin(plugin: RegistryPluginInput): Promise<{ id: number }>;
+  /** Только для администратор — удалить запись из динамического реестра. */
+  removeRegistryAddition(registryId: number): Promise<void>;
+}
+
+/** Управление service_secret приложения (auth-service /auth/apps/secret, admin). */
+export interface ManageAppSecretInput {
+  appId: string;
+  action: 'status' | 'sync' | 'rotate';
+}
+
+export interface ManageAppSecretResult {
+  appId: string;
+  /** Секрет задан в таблице apps. */
+  set?: boolean;
+  /** Последнее изменение (apply), ISO или null. */
+  updatedAt?: string | null;
+  /** Есть незавершённая ротация (pending). */
+  pending?: boolean;
+  pendingSince?: string | null;
+  /** sync: apps выровнен по env сервера. */
+  applied?: boolean;
+  /** rotate: новое значение (показывается один раз). */
+  newSecret?: string;
+}
+
+/** Управление динамическим реестром плагинов (auth-service /auth/registry, admin). */
+export interface RegistryAddition {
+  registryId: number;
+  createdAt: string;
+  plugin: RegistryPluginEntry;
+}
+
+export interface RegistryPluginInput {
+  id: string;
+  dir?: string;
+  name: string;
+  repo: string;
+  branch?: string;
+  required?: boolean;
+  hasView?: boolean;
+  categories?: string[];
+  ownerEmail?: string;
+  description?: string;
 }
 
 /** Присутствие устройств (GET /auth/presence, auth-service). */
