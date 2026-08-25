@@ -55,6 +55,31 @@ func (s *Server) migrate(ctx context.Context) error {
 			read_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
 			PRIMARY KEY (message_id, email)
 		)`,
+		// Управление service_secret приложений (2026-08-25): обновление apps.updated_at,
+		// очередь ротаций (применяет хост-скрипт secret-applier) и журнал действий.
+		`ALTER TABLE apps ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ`,
+		`CREATE TABLE IF NOT EXISTS secret_rotations (
+			app_id       TEXT PRIMARY KEY,
+			new_secret   TEXT NOT NULL,
+			status       TEXT NOT NULL DEFAULT 'pending',
+			requested_by TEXT NOT NULL DEFAULT '',
+			created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+			applied_at   TIMESTAMPTZ
+		)`,
+		`CREATE TABLE IF NOT EXISTS secret_audit (
+			id           SERIAL PRIMARY KEY,
+			app_id       TEXT NOT NULL,
+			action       TEXT NOT NULL,
+			requested_by TEXT NOT NULL DEFAULT '',
+			created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+		)`,
+		// Динамический реестр (ЦУП, 2026-08-25): записи, добавленные администратором
+		// из настроек ЦУП, сливаются с базовым registry.json в GET /registry.json.
+		`CREATE TABLE IF NOT EXISTS registry_additions (
+			id         SERIAL PRIMARY KEY,
+			entry      JSONB NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+		)`,
 	}
 	for _, stmt := range stmts {
 		if _, err := s.pool.Exec(ctx, stmt); err != nil {

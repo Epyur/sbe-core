@@ -96,6 +96,10 @@ services:
       ADMIN_EMAILS: ${ADMIN_EMAILS}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      # Базовый registry.json для динамической выдачи GET /registry.json
+      # (база + записи, добавленные администратором из ЦУП).
+      - ./www:/srv/www:ro
     depends_on:
       auth-db:
         condition: service_healthy
@@ -135,6 +139,12 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       S3_BUCKET: sbe-doc
+      SMTP_HOST: host.docker.internal
+      SMTP_PORT: "25"
+      SMTP_FROM: ${SMTP_FROM}
+      SMTP_SKIP_VERIFY: "1"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       documents-db:
         condition: service_healthy
@@ -176,6 +186,19 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       S3_BUCKET: sbe-doc
+      # Мониторинг почты lpitn@yandex.ru (2026-08-24, тестовый режим — см.
+      # lab-service/AGENTS.md и mail_fetch_by_id.go). LAB_MAIL_ENABLED
+      # сознательно НЕ задан здесь по умолчанию — постоянный воркер (весь
+      # архив папки при включении) остаётся выключенным; учётные данные и
+      # LAB_MAIL_METHOD_MAP/LAB_MAIL_LAB_ID нужны точечному режиму
+      # `fetch-mail`, который их не проверяет через LAB_MAIL_ENABLED.
+      LAB_MAIL_ENABLED: ${LAB_MAIL_ENABLED:-false}
+      LAB_MAIL_IMAP_SERVER: ${LAB_MAIL_IMAP_SERVER:-}
+      LAB_MAIL_LOGIN: ${LAB_MAIL_LOGIN:-}
+      LAB_MAIL_PASSWORD: ${LAB_MAIL_PASSWORD:-}
+      LAB_MAIL_POLL_INTERVAL_SECONDS: ${LAB_MAIL_POLL_INTERVAL_SECONDS:-120}
+      LAB_MAIL_METHOD_MAP: ${LAB_MAIL_METHOD_MAP:-}
+      LAB_MAIL_LAB_ID: ${LAB_MAIL_LAB_ID:-}
     depends_on:
       lab-db:
         condition: service_healthy

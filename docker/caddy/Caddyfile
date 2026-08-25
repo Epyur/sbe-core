@@ -39,8 +39,7 @@ https://{$DOMAIN} {
 	}
 
 	handle /registry.json {
-		root * /srv/www
-		file_server
+		reverse_proxy auth-service:3000
 	}
 
 	handle {

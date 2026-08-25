@@ -19,6 +19,18 @@
 
 ## История
 
+- **2026-08-25 — динамический `/registry.json`:** маршрут перенаправлен со статики на
+  `auth-service` (публичный `GET /registry.json` = база из `./www/registry.json`
+  + добавления администратора из БД auth); в auth-service добавлен маунт
+  `./www:/srv/www:ro`. Позволяет ЦУП добавлять плагины в реестр без правки файлов.
+
+- **2026-08-25 — documents: SMTP для уведомлений об истечении срока.** В сервис
+  `documents` добавлены `SMTP_HOST: host.docker.internal`, `SMTP_PORT: 25`,
+  `SMTP_FROM: ${SMTP_FROM}` (общая с auth-service), `SMTP_SKIP_VERIFY: 1` и
+  `extra_hosts: host.docker.internal:host-gateway` (как у auth-service — иначе
+  `host.docker.internal` не резолвится в контейнере). Задеплоено, письмо-уведомление
+  доставлено (E2E 2026-08-25).
+
 - **2026-08-16:** базовый стек + TLS + S3-бэкап. Подробности — [process.md](../../process.md).
 - **2026-08-17:** добавлены `auth-db` + `auth-service` (Этап 1), в Caddyfile добавлены
   маршруты `/auth/*`, `/apps/*`, `/health`; `depends_on` caddy расширен. Перед правками

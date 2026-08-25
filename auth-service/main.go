@@ -79,6 +79,12 @@ func main() {
 	mux.HandleFunc("GET /auth/news", s.requireKey(s.handleListNews))
 	mux.HandleFunc("POST /auth/news/{id}/ack", s.requireKey(s.handleAckNews))
 	mux.HandleFunc("GET /auth/news/{id}/reads", s.requireKey(s.handleNewsReads))
+	mux.HandleFunc("GET /auth/apps/secret", s.requireKey(s.handleAppSecretStatus))
+	mux.HandleFunc("POST /auth/apps/secret", s.requireKey(s.handleAppSecretAction))
+	mux.HandleFunc("GET /auth/registry", s.requireKey(s.handleRegistryList))
+	mux.HandleFunc("POST /auth/registry", s.requireKey(s.handleRegistryAdd))
+	mux.HandleFunc("DELETE /auth/registry/{id}", s.requireKey(s.handleRegistryDelete))
+	mux.HandleFunc("GET /registry.json", s.handleRegistryJSON)
 	mux.HandleFunc("POST /apps/register", s.handleRegisterApp)
 
 	httpServer := &http.Server{

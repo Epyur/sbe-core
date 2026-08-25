@@ -44,6 +44,21 @@ docker compose exec auth-service wget -qO- http://localhost:3000/health
 
 ## История
 
+- **2026-08-25 — Управление секретами приложений + динамический реестр (ЦУП):**
+  - `secret_admin.go`: admin-эндпоинты (мастер-ключ устройства + `ADMIN_EMAILS`)
+    `GET/POST /auth/apps/secret` — статус / sync (`apps.service_secret` ← env
+    `{APP}_SERVICE_SECRET`) / rotate (генерация нового 32-байтного hex + очередь в
+    таблицу `secret_rotations`; применяет хост-скрипт `/opt/mailers/secret-applier.sh`
+    по cron: обновляет `.env`, `apps` и пересоздаёт контейнер сервиса). Журнал
+    `secret_audit`. В `apps` добавлена колонка `updated_at`.
+  - `registry_admin.go`: динамический реестр плагинов — таблица `registry_additions`,
+    admin-CRUD `GET/POST/DELETE /auth/registry`, публичный `GET /registry.json` =
+    базовый `/srv/www/registry.json` (маунт `./www:/srv/www:ro`) + добавления.
+    Caddy переключён со статики на `reverse_proxy auth-service:3000`.
+  - E2E: rotate → applier применил (`.env`+`apps`+рестарт, `registerApp` OK);
+    add → запись появилась в публичном `/registry.json`; delete → исчезла.
+  - Деплой: `docker compose up -d --build auth-service`.
+
 - **2026-08-17 — создание (Этап 1 плана 2026-08-16-sbe-server-auth-rights-plan.md).**
   Собрано в образ `mailers-auth-service`, контейнер `auth-service` + `auth-db` запущены.
   Миграции (`users`/`devices`/`keys`/`apps`) и seed приложения `mailer` выполняются при старте.

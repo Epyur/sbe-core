@@ -31,6 +31,16 @@ design-токены. **Не плагин** (нет `manifest.json`; Obsidian е�
 
 ## История работ
 
+### 2026-08-25 — управление секретами приложений и динамический реестр (ЦУП)
+- `SbeAuthApi`: новые методы + типы:
+  - `manageAppSecret({appId, action: 'status'|'sync'|'rotate'})` → `ManageAppSecretResult`
+    — статус/синхронизация/ротация `service_secret` приложения (только администратор);
+  - `listRegistryAdditions()`, `addRegistryPlugin(plugin)`, `removeRegistryAddition(id)`
+    + типы `RegistryAddition`, `RegistryPluginInput` — динамический реестр плагинов
+    (админ добавляет плагин из ЦУП, он сразу появляется в `/registry.json`).
+- Реализация на сервере — auth-service (ветка `backend`, см. его AGENTS.md); UI — ЦУП
+  (sbe-apstore 0.3.6). Потребители не пересобирались, кроме использующих метод.
+
 ### 2026-08-22 — присутствие + новости в SbeAuthApi/SbeApstoreApi
 - `SbeAuthApi`: новые методы `getPresence()`, `listNews()`, `createNews()`, `ackNews()`,
   `getNewsReads()` + типы `PresenceInfo`, `NewsItem`, `CreateNewsInput`, `NewsReadStatus`
