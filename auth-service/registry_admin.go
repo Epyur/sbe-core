@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -93,6 +94,14 @@ func (s *Server) handleRegistryAdd(w http.ResponseWriter, r *http.Request) {
 	p.Repo = strings.TrimSpace(p.Repo)
 	if p.ID == "" || p.Repo == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "id and repo are required"})
+		return
+	}
+	// Защита от path traversal через dir/id из реестра (ревью B4):
+	// только безопасные имена каталогов.
+	var idDirRe = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]*$`)
+	if !idDirRe.MatchString(strings.ToLower(p.Dir)) || strings.Contains(p.Dir, "..") ||
+		strings.ContainsAny(p.Repo, "\\\x00") {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid id or dir"})
 		return
 	}
 	if p.Dir == "" {

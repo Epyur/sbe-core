@@ -20,6 +20,9 @@ export interface RegistryPluginEntry {
   /** Email владельца продукта (первый admin плагина). Источник истины — реестр,
    *  используется plugin-service при bootstrap прав. */
   ownerEmail?: string;
+  /** SHA-256 (hex, lowercase) файлов для контроля целостности при установке
+   *  (ревью B4). Отсутствие = установка без проверки (с предупреждением). */
+  hashes?: { manifest?: string; main?: string; styles?: string };
 }
 
 export interface RegistryFile {
