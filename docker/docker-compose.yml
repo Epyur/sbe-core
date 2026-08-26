@@ -20,7 +20,7 @@ services:
     build: ./backend
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      DATABASE_URL: postgres://${MAILERS_APP_USER}:${MAILERS_APP_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
       PORT: "3000"
       JWT_SECRET: ${JWT_SECRET}
       MAILER_APP_ID: mailer
@@ -60,7 +60,7 @@ services:
     build: ./auth-service
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://${AUTH_POSTGRES_USER}:${AUTH_POSTGRES_PASSWORD}@auth-db:5432/${AUTH_POSTGRES_DB}?sslmode=disable
+      DATABASE_URL: postgres://${AUTH_APP_USER}:${AUTH_APP_PASSWORD}@auth-db:5432/${AUTH_POSTGRES_DB}?sslmode=disable
       PORT: "3000"
       JWT_SECRET: ${JWT_SECRET}
       APPS_REGISTER_SECRET: ${APPS_REGISTER_SECRET}
@@ -127,7 +127,7 @@ services:
     build: ./documents-service
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://${DOCUMENTS_POSTGRES_USER}:${DOCUMENTS_POSTGRES_PASSWORD}@documents-db:5432/${DOCUMENTS_POSTGRES_DB}?sslmode=disable
+      DATABASE_URL: postgres://${DOCUMENTS_APP_USER}:${DOCUMENTS_APP_PASSWORD}@documents-db:5432/${DOCUMENTS_POSTGRES_DB}?sslmode=disable
       PORT: "3000"
       JWT_SECRET: ${JWT_SECRET}
       DOCUMENTS_APP_ID: documents
@@ -174,7 +174,7 @@ services:
     build: ./lab-service
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://${LAB_POSTGRES_USER}:${LAB_POSTGRES_PASSWORD}@lab-db:5432/${LAB_POSTGRES_DB}?sslmode=disable
+      DATABASE_URL: postgres://${LAB_APP_USER}:${LAB_APP_PASSWORD}@lab-db:5432/${LAB_POSTGRES_DB}?sslmode=disable
       PORT: "3000"
       JWT_SECRET: ${JWT_SECRET}
       LAB_APP_ID: lab
@@ -228,7 +228,7 @@ services:
     build: ./ekn-service
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://${EKN_POSTGRES_USER}:${EKN_POSTGRES_PASSWORD}@ekn-db:5432/${EKN_POSTGRES_DB}?sslmode=disable
+      DATABASE_URL: postgres://${EKN_APP_USER}:${EKN_APP_PASSWORD}@ekn-db:5432/${EKN_POSTGRES_DB}?sslmode=disable
       PORT: "3000"
       JWT_SECRET: ${JWT_SECRET}
       EKN_APP_ID: ekn
@@ -267,7 +267,7 @@ services:
     build: ./contacts-service
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://${CONTACTS_POSTGRES_USER}:${CONTACTS_POSTGRES_PASSWORD}@contacts-db:5432/${CONTACTS_POSTGRES_DB}?sslmode=disable
+      DATABASE_URL: postgres://${CONTACTS_APP_USER}:${CONTACTS_APP_PASSWORD}@contacts-db:5432/${CONTACTS_POSTGRES_DB}?sslmode=disable
       PORT: "3000"
       JWT_SECRET: ${JWT_SECRET}
       CONTACTS_APP_ID: contacts
@@ -305,7 +305,7 @@ services:
     restart: unless-stopped
     mem_limit: 512m
     environment:
-      DATABASE_URL: postgres://${AGENT_POSTGRES_USER}:${AGENT_POSTGRES_PASSWORD}@agent-db:5432/${AGENT_POSTGRES_DB}?sslmode=disable
+      DATABASE_URL: postgres://${AGENT_APP_USER}:${AGENT_APP_PASSWORD}@agent-db:5432/${AGENT_POSTGRES_DB}?sslmode=disable
       PORT: "3000"
       JWT_SECRET: ${JWT_SECRET}
       AGENT_APP_ID: agent
