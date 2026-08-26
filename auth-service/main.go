@@ -81,6 +81,8 @@ func main() {
 	mux.HandleFunc("GET /auth/news/{id}/reads", s.requireKey(s.handleNewsReads))
 	mux.HandleFunc("GET /auth/apps/secret", s.requireKey(s.handleAppSecretStatus))
 	mux.HandleFunc("POST /auth/apps/secret", s.requireKey(s.handleAppSecretAction))
+	mux.HandleFunc("GET /auth/apps/env", s.requireKey(s.handleAppEnvStatus))
+	mux.HandleFunc("POST /auth/apps/env", s.requireKey(s.handleAppEnvSet))
 	mux.HandleFunc("GET /auth/registry", s.requireKey(s.handleRegistryList))
 	mux.HandleFunc("POST /auth/registry", s.requireKey(s.handleRegistryAdd))
 	mux.HandleFunc("DELETE /auth/registry/{id}", s.requireKey(s.handleRegistryDelete))

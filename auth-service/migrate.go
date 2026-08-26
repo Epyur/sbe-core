@@ -80,6 +80,22 @@ func (s *Server) migrate(ctx context.Context) error {
 			entry      JSONB NOT NULL,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 		)`,
+		// app_env_pending (ЦУП, 2026-08-26): очередь admin-заданных значений
+		// произвольных env-переменных приложения (напр. LAB_MAIL_LOGIN/PASSWORD) —
+		// применяет тот же хост-скрипт secret-applier.sh, что и secret_rotations,
+		// но ключ/значение свои у каждого приложения (белый список — env_admin.go),
+		// не единственный "new_secret" на app_id. value обнуляется после applied —
+		// секрет живёт в БД только до переноса в .env, не хранится тут постоянно.
+		`CREATE TABLE IF NOT EXISTS app_env_pending (
+			app_id       TEXT NOT NULL,
+			env_key      TEXT NOT NULL,
+			value        TEXT,
+			status       TEXT NOT NULL DEFAULT 'pending',
+			requested_by TEXT NOT NULL DEFAULT '',
+			created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+			applied_at   TIMESTAMPTZ,
+			PRIMARY KEY (app_id, env_key)
+		)`,
 	}
 	for _, stmt := range stmts {
 		if _, err := s.pool.Exec(ctx, stmt); err != nil {

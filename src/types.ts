@@ -118,6 +118,13 @@ export interface SbeAuthApi {
   getNewsReads(id: number): Promise<NewsReadStatus[]>;
   /** Только для администратора — статус/синхронизация/ротация service_secret приложения. */
   manageAppSecret(input: ManageAppSecretInput): Promise<ManageAppSecretResult>;
+  /** Только для администратора — статус admin-управляемых env-переменных приложения
+   *  (белый список на сервере, напр. LAB_MAIL_* — учётка почты email-приёма lab-service). */
+  getAppEnvStatus(appId: string): Promise<AppEnvStatus>;
+  /** Только для администратора — поставить в очередь новые значения env-переменных
+   *  приложения (применяет хост-скрипт, сервис перезапускается). Значения не
+   *  логируются и не возвращаются обратно нигде — только "set"/"pending" в статусе. */
+  setAppEnv(appId: string, values: Record<string, string>): Promise<{ appId: string; pending: boolean }>;
   /** Только для администратора — список добавленных в динамический реестр плагинов. */
   listRegistryAdditions(): Promise<RegistryAddition[]>;
   /** Только для администратор — добавить плагин в динамический реестр. */
@@ -145,6 +152,24 @@ export interface ManageAppSecretResult {
   applied?: boolean;
   /** rotate: новое значение (показывается один раз). */
   newSecret?: string;
+}
+
+/** Статус admin-управляемых env-переменных приложения (auth-service /auth/apps/env, admin).
+ *  Значения самих переменных сервер никогда не возвращает — только факт/дату. */
+export interface AppEnvStatus {
+  appId: string;
+  keys: AppEnvKeyStatus[];
+}
+
+export interface AppEnvKeyStatus {
+  key: string;
+  /** Значение когда-либо применено (лежит в .env сервера). */
+  set: boolean;
+  /** Последнее применение, ISO или null. */
+  updatedAt: string | null;
+  /** Есть заявка, ожидающая применения хост-скриптом. */
+  pending: boolean;
+  pendingSince: string | null;
 }
 
 /** Управление динамическим реестром плагинов (auth-service /auth/registry, admin). */
