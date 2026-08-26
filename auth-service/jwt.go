@@ -23,16 +23,12 @@ func sha256Hex(s string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func signJWT(email, deviceID, appID string) (string, time.Time, error) {
-	secret := os.Getenv("JWT_SECRET")
+// signJWT подписывает токен указанным секретом (Блок D, ревью 1.2): auth-service
+// больше не использует общий JWT_SECRET — каждый токен подписывается КЛЮЧОМ
+// ПРИЛОЖЕНИЯ (apps.service_secret / {APP}_SERVICE_SECRET). Добавлены iss/aud.
+func signJWT(email, deviceID, appID, secret string, ttl time.Duration) (string, time.Time, error) {
 	if secret == "" {
 		return "", time.Time{}, jwt.ErrInvalidKey
-	}
-	ttl := time.Hour
-	if v := os.Getenv("AUTH_TOKEN_TTL"); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			ttl = d
-		}
 	}
 	now := time.Now()
 	exp := now.Add(ttl)
@@ -40,10 +36,23 @@ func signJWT(email, deviceID, appID string) (string, time.Time, error) {
 		"email":     email,
 		"device_id": deviceID,
 		"app_id":    appID,
+		"iss":       "auth-service",
+		"aud":       appID,
 		"iat":       now.Unix(),
 		"exp":       exp.Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signed, err := token.SignedString([]byte(secret))
 	return signed, exp, err
+}
+
+// tokenTTL — срок жизни токена (env AUTH_TOKEN_TTL, по умолчанию 1 час).
+func tokenTTL() time.Duration {
+	ttl := time.Hour
+	if v := os.Getenv("AUTH_TOKEN_TTL"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			ttl = d
+		}
+	}
+	return ttl
 }

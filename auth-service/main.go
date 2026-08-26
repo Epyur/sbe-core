@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -98,6 +100,9 @@ func main() {
 	mux.HandleFunc("DELETE /auth/registry/{id}", s.requireKey(s.handleRegistryDelete))
 	mux.HandleFunc("GET /registry.json", s.handleRegistryJSON)
 	mux.HandleFunc("POST /apps/register", s.handleRegisterApp)
+	// Внутренний эндпоинт служебных токенов (lab→ekn): Caddy НЕ проксирует
+	// /internal/* — доступен только в docker-сети (Блок D, замена mintServiceJWT).
+	mux.HandleFunc("POST /internal/service-token", s.handleServiceToken)
 
 	httpServer := &http.Server{
 		Addr:              ":" + port,
@@ -266,13 +271,17 @@ WHERE k.key_hash = $1`, sha256Hex(req.Key)).Scan(&deviceID, &userID, &status)
 		writeJSON(w, http.StatusForbidden, map[string]any{"error": "key not activated"})
 		return
 	}
-	var exists bool
-	if err := s.pool.QueryRow(r.Context(), `SELECT EXISTS(SELECT 1 FROM apps WHERE app_id = $1)`, req.AppID).Scan(&exists); err != nil {
-		internalError(w, err)
-		return
-	}
-	if !exists {
-		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "unknown app_id"})
+	// Per-service ключ (Блок D, ревью 1.2): токен для app подписывается его
+	// service_secret, а не общим JWT_SECRET — утечка одного ключа не даёт
+	// подделать токены для остальных сервисов.
+	var appSecret string
+	if err := s.pool.QueryRow(r.Context(),
+		`SELECT service_secret FROM apps WHERE app_id = $1`, req.AppID).Scan(&appSecret); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeJSON(w, http.StatusBadRequest, map[string]any{"error": "unknown app_id"})
+		} else {
+			internalError(w, err)
+		}
 		return
 	}
 
@@ -280,7 +289,7 @@ WHERE k.key_hash = $1`, sha256Hex(req.Key)).Scan(&deviceID, &userID, &status)
 	// здесь перед вызовом своего backend — не блокирует выдачу токена при ошибке.
 	s.touchLastSeen(r.Context(), deviceID)
 
-	jwtStr, exp, err := signJWT(userID, deviceID, req.AppID)
+	jwtStr, exp, err := signJWT(userID, deviceID, req.AppID, appSecret, tokenTTL())
 	if err != nil {
 		internalError(w, err)
 		return
