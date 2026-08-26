@@ -19,7 +19,9 @@ design-токены. **Не плагин** (нет `manifest.json`; Obsidian е�
 - `src/types.ts` — реестр (`RegistryPluginEntry`, `RegistryFile`), `SbeApstoreApi`, `SbeLlmApi`, `SbeYougileApi`, `SbeServiceMap` (типизированный словарь сервисов).
 - `src/bridge.ts` — мост `window.SBE`: `publishService`/`unpublishService`/`getServiceSync`/`getService` (поллинг 200 мс, таймаут 15 с, понятная ошибка с именем плагина).
 - `src/registry.ts` — `DEFAULT_REGISTRY_URL` (`raw.githubusercontent.com/Epyur/sbe-apstore-registry/main/registry.json`) + типы.
-- `src/installer.ts` — скачивание файлов плагина с `main`-ветки, запись адаптером, `require.cache` очистка.
+- `src/installer.ts` — скачивание файлов плагина с `main`-ветки, запись адаптером, `require.cache` очистка, SHA-256 по хешам реестра; опция `skipReload` (самообновление установщика).
+- `src/auth-client.ts` — серверный auth-клиент `AuthService` (ключ на email+device_id, JWT, устройства, новости, presence, env, динамический реестр) — общий для `sbe-apstore` и `sbe-mobile` (перенесён 2026-08-26).
+- `src/store-manager.ts` — состояние магазина `StoreManager` (реестр, карточки, установка/обновление) — общий для `sbe-apstore` и `sbe-mobile` (перенесён 2026-08-26).
 - `src/utils/errors.ts` — `errorMessage(e: unknown)` для всех `catch`.
 - `src/design/tokens.css` + `components.css` — дизайн-система SBE (`tn-*`).
 
@@ -30,6 +32,15 @@ design-токены. **Не плагин** (нет `manifest.json`; Obsidian е�
 - `SbeLlmApi` — центр хранит только `apiUrl` + ключ; `getStatus(): {configured, apiUrl}`, без `resolveModel`/моделей. Модель и промты — у потребителя.
 
 ## История работ
+
+### 2026-08-26 — общий клиент для мобильного хаба (auth-client.ts + store-manager.ts)
+- `AuthService` (бывш. `sbe-apstore/src/services/auth-service.ts`) → `src/auth-client.ts`;
+  `StoreManager` (бывш. `sbe-apstore/src/services/store-manager.ts`) → `src/store-manager.ts`.
+  Общие для десктопного ЦУП (sbe-apstore 0.3.9) и нового мобильного хаба
+  `sbe-mobile` (v0.1.0). Потребители пересобраны только те, кто их использует
+  (политика 2026-08-20).
+- `installer.ts`: опция `skipReload` — пропустить clearRequireCache + disable/enable
+  (самообновление плагина-установщика; файлы пишутся, перезапуск инициирует вызывающий).
 
 ### 2026-08-25 — управление секретами приложений и динамический реестр (ЦУП)
 - `SbeAuthApi`: новые методы + типы:

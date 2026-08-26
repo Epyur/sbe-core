@@ -85,7 +85,17 @@ async function reloadPlugin(app: App, id: string): Promise<void> {
  */
 export async function installPlugin(
   app: App,
-  opts: { dir: string; id: string; repo: string; branch: string; hashes?: RegistryPluginEntry['hashes'] },
+  opts: {
+    dir: string;
+    id: string;
+    repo: string;
+    branch: string;
+    hashes?: RegistryPluginEntry['hashes'];
+    /** Пропустить clearRequireCache + disable/enable — для самообновления плагина-установщика
+     *  (перезагрузка самого себя во время выполнения небезопасна; после записи файлов
+     *  вызывающий показывает пользователю кнопку перезапуска Obsidian). */
+    skipReload?: boolean;
+  },
 ): Promise<InstallResult> {
   try {
     const dir = safePluginDir(opts.dir);
@@ -127,8 +137,10 @@ export async function installPlugin(
       console.warn('SBE: ни один файл не прошёл проверку целостности.');
     }
 
-    clearRequireCache(app, dir);
-    await reloadPlugin(app, id);
+    if (!opts.skipReload) {
+      clearRequireCache(app, dir);
+      await reloadPlugin(app, id);
+    }
     return { ok: true };
   } catch (e: unknown) {
     const msg = errorMessage(e);
