@@ -318,6 +318,7 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       AGENT_S3_BUCKET: sbe-agent
       MERMAID_SERVICE_URL: http://agent-mermaid:3000
+      MERMAID_AUTH_TOKEN: ${MERMAID_AUTH_TOKEN}
     depends_on:
       agent-db:
         condition: service_healthy
@@ -334,6 +335,7 @@ services:
     mem_limit: 1g
     environment:
       PORT: "3000"
+      MERMAID_AUTH_TOKEN: ${MERMAID_AUTH_TOKEN}
     networks:
       - internal
 

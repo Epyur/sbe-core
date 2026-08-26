@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 	"time"
@@ -105,7 +104,7 @@ func (s *Server) handleAppEnvSet(w http.ResponseWriter, r *http.Request) {
 		AppID  string            `json:"app_id"`
 		Values map[string]string `json:"values"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(w, r, &req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid json"})
 		return
 	}

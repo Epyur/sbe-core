@@ -19,6 +19,11 @@ var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[
 type Server struct {
 	pool        *pgxpool.Pool
 	adminEmails map[string]bool
+	// Анти-brute-force на активацию ключа и выдачу токена (ревью 2.1):
+	// 256-битный ключ делает перебор непрактичным, но без блокировки
+	// эндпоинты открыты для бесконечных попыток.
+	activateLim *ipLimiter
+	tokenLim    *ipLimiter
 }
 
 func parseAdminEmails() map[string]bool {
@@ -59,7 +64,12 @@ func main() {
 		log.Fatalf("ping: %v", err)
 	}
 
-	s := &Server{pool: pool, adminEmails: parseAdminEmails()}
+	s := &Server{
+		pool:        pool,
+		adminEmails: parseAdminEmails(),
+		activateLim: newIPLimiter(time.Minute, 20),
+		tokenLim:    newIPLimiter(time.Minute, 60),
+	}
 	if err := s.migrate(ctx); err != nil {
 		log.Fatalf("migrate: %v", err)
 	}
@@ -93,6 +103,8 @@ func main() {
 		Addr:              ":" + port,
 		Handler:           withCORS(mux),
 		ReadHeaderTimeout: 10 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	log.Printf("auth-service listening on :%s", port)
@@ -114,7 +126,7 @@ func (s *Server) handleRequestKey(w http.ResponseWriter, r *http.Request) {
 		Email    string `json:"email"`
 		DeviceID string `json:"device_id"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(w, r, &req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid json"})
 		return
 	}
@@ -179,8 +191,13 @@ func (s *Server) handleActivateKey(w http.ResponseWriter, r *http.Request) {
 		DeviceID string `json:"device_id"`
 		Key      string `json:"key"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(w, r, &req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid json"})
+		return
+	}
+	// Анти-brute-force (ревью 2.1): лимит попыток активации с одного IP.
+	if !s.activateLim.allow(clientIP(r)) {
+		writeJSON(w, http.StatusTooManyRequests, map[string]any{"error": "too many attempts, try later"})
 		return
 	}
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
@@ -220,8 +237,13 @@ func (s *Server) handleToken(w http.ResponseWriter, r *http.Request) {
 		Key   string `json:"key"`
 		AppID string `json:"app_id"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(w, r, &req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid json"})
+		return
+	}
+	// Анти-brute-force (ревью 2.1): лимит запросов токенов с одного IP.
+	if !s.tokenLim.allow(clientIP(r)) {
+		writeJSON(w, http.StatusTooManyRequests, map[string]any{"error": "too many requests, try later"})
 		return
 	}
 	req.Key = strings.TrimSpace(req.Key)
@@ -276,7 +298,12 @@ type authUser struct {
 func (s *Server) requireKey(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")
-		key := strings.TrimSpace(strings.TrimPrefix(auth, "Bearer"))
+		// Строго "Bearer " с пробелом (раньше TrimPrefix("Bearer") принимал
+		// и "BearerX" без пробела — ревью 2.1).
+		var key string
+		if strings.HasPrefix(auth, "Bearer ") {
+			key = strings.TrimSpace(auth[len("Bearer "):])
+		}
 		if key == "" {
 			writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "unauthorized"})
 			return
@@ -459,7 +486,7 @@ func (s *Server) handleCreateNews(w http.ResponseWriter, r *http.Request) {
 		Recipients []string `json:"recipients"`
 		Mandatory  bool     `json:"mandatory"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(w, r, &req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid json"})
 		return
 	}
@@ -650,7 +677,7 @@ func (s *Server) handleRegisterApp(w http.ResponseWriter, r *http.Request) {
 		OwnerEmail    string `json:"owner_email"`
 		ServiceSecret string `json:"service_secret"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeJSON(w, r, &req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid json"})
 		return
 	}
@@ -721,12 +748,12 @@ func (s *Server) authorizedRegister(ctx context.Context, appID, provided string)
 	if provided == "" {
 		return false
 	}
-	if master := os.Getenv("APPS_REGISTER_SECRET"); master != "" && provided == master {
+	if master := os.Getenv("APPS_REGISTER_SECRET"); master != "" && constTimeEqual(provided, master) {
 		return true
 	}
 	var existing string
 	err := s.pool.QueryRow(ctx, `SELECT service_secret FROM apps WHERE app_id = $1`, appID).Scan(&existing)
-	if err == nil && provided == existing {
+	if err == nil && constTimeEqual(provided, existing) {
 		return true
 	}
 	return false
