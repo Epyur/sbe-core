@@ -33,6 +33,14 @@ design-токены. **Не плагин** (нет `manifest.json`; Obsidian е�
 
 ## История работ
 
+### 2026-08-27 — SbeDashboardsApi + listCharts
+- Добавлены `SbeDashboardsApi extends SbeOpenableApi` (метод `listCharts(): Promise<
+  DashboardChartMeta[]>`, тип `DashboardChartMeta` {id, slug, title, source,
+  description, updatedAt}), `'sbe-dashboards'` в `SbeServiceMap`, `getServiceName`
+  → «LogicTEAM.Дашборды». Аддитивно; существующие плагины не пересобираются.
+- Создан плагин `sbe-dashboards` (v0.1.0 → 0.1.1); sbe-presentations 0.3.9 забирает
+  список графиков через `getService('sbe-dashboards').listCharts()`.
+
 ### 2026-08-26 — общий клиент для мобильного хаба (auth-client.ts + store-manager.ts)
 - `AuthService` (бывш. `sbe-apstore/src/services/auth-service.ts`) → `src/auth-client.ts`;
   `StoreManager` (бывш. `sbe-apstore/src/services/store-manager.ts`) → `src/store-manager.ts`.
