@@ -356,6 +356,10 @@ export interface SbeEknApi extends SbeOpenableApi {
 /** API плагина «ЛИМС». open() — точка входа из ЦУП. */
 export interface SbeLimsApi extends SbeOpenableApi {}
 
+/** API плагина «ЛИМС Мобайл» (сканирование QR → ввод результатов/калибровки на
+ * планшете испытателя). open() — точка входа из мини-магазина sbe-mobile. */
+export interface SbeLimsMobileApi extends SbeOpenableApi {}
+
 /** API плагина «Контакты». open() — точка входа из ЦУП. */
 export interface SbeContactsApi extends SbeOpenableApi {}
 
@@ -371,6 +375,7 @@ export interface SbeServiceMap {
   'sbe-documents': SbeDocumentsApi;
   'sbe-ekn': SbeEknApi;
   'sbe-lims': SbeLimsApi;
+  'sbe-lims-mobile': SbeLimsMobileApi;
   'sbe-llm': SbeLlmApi;
   'sbe-mailer': SbeMailApi;
   'sbe-presentations': SbePresentationsApi;
