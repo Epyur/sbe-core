@@ -363,6 +363,11 @@ export interface SbeLimsMobileApi extends SbeOpenableApi {}
 /** API плагина «Контакты». open() — точка входа из ЦУП. */
 export interface SbeContactsApi extends SbeOpenableApi {}
 
+/** API плагина «Logicteam.Дашборды». open() — точка входа из ЦУП.
+ *  Интеграция с презентациями — через общие файлы (charts_data.json + png/),
+ *  дополнительных методов не требуется. */
+export interface SbeDashboardsApi extends SbeOpenableApi {}
+
 /** API плагина «LogicTEAM.007» (универсальный LLM-агент). open() — точка входа из ЦУП. */
 export interface SbeAgentApi extends SbeOpenableApi {}
 
@@ -372,6 +377,7 @@ export interface SbeServiceMap {
   'sbe-agent': SbeAgentApi;
   'sbe-calendar': SbeCalendarApi;
   'sbe-contacts': SbeContactsApi;
+  'sbe-dashboards': SbeDashboardsApi;
   'sbe-documents': SbeDocumentsApi;
   'sbe-ekn': SbeEknApi;
   'sbe-lims': SbeLimsApi;

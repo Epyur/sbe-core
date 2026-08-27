@@ -85,6 +85,8 @@ function getServiceName(id: string): string {
       return 'ЛИМС Мобайл';
     case 'sbe-contacts':
       return 'Контакты';
+    case 'sbe-dashboards':
+      return 'Logicteam.Дашборды';
     case 'sbe-agent':
       return 'LogicTEAM.007';
     case 'sbe-yougile':
