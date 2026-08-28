@@ -56,7 +56,11 @@ docker compose exec auth-service wget -qO- http://localhost:3000/health
   (автор, плагин, получатель, текст, status `sent`/`failed`) — обращение не
   теряется при сбое SMTP. Валидации: текст обязателен и ≤ 4000 симв., неизвестный
   плагин → 400. Клиент — `sbe-apstore` 0.3.10 (`auth.sendFeedback`). `go build`/
-  `go vet`/`go test` — чисто.
+  `go vet`/`go test` — чисто. **Задеплоено на VDS** (`docker compose up -d
+  --build auth-service`), контрольные суммы файлов совпали с локальными, health
+  ok, таблица `feedback_messages` создана миграцией, роут `POST /auth/feedback`
+  зарегистрирован (без ключа → 401). Полный E2E (отправка с реальным ключом
+  → письмо владельцу) — при следующей ручной проверке из ЦУП.
 
 - **2026-08-26 — Generic admin-канал для произвольных env-переменных приложений
   (`app_env_pending`), первый потребитель — `LAB_MAIL_*` (учётка почты
