@@ -4,8 +4,8 @@
 
 | Файл | Что это |
 |---|---|
-| `docker-compose.yml` | Сервисы: `postgres` (БД mailers), `backend` (mailer-service), `auth-db` (БД auth), `auth-service`, `documents-db`+`documents`, `lab-db`+`lab`, `ekn-db`+`ekn`, `contacts-db`+`contacts`, `agent-db`+`agent`+`agent-mermaid`, `caddy` (443), `portainer` (127.0.0.1:9000). Сеть `internal` |
-| `caddy/Caddyfile` | TLS reverse-proxy `epyur.fvds.ru`: `/api/ekn/*` → ekn, `/api/agent/*` → agent, `/api/contacts/*` → contacts, `/api/lab/*` → lab, `/api/documents/*` → documents, `/api/*` → backend, `/auth/*`, `/apps/*`, `/health` → auth-service |
+| `docker-compose.yml` | Сервисы: `postgres` (БД mailers), `backend` (mailer-service), `auth-db` (БД auth), `auth-service`, `documents-db`+`documents`, `lab-db`+`lab`, `ekn-db`+`ekn`, `contacts-db`+`contacts`, `agent-db`+`agent`+`agent-mermaid`, `photo-db`+`photo`, `caddy` (443), `portainer` (127.0.0.1:9000). Сеть `internal` |
+| `caddy/Caddyfile` | TLS reverse-proxy `epyur.fvds.ru`: `/api/ekn/*` → ekn, `/api/agent/*` → agent, `/api/contacts/*` → contacts, `/api/lab/*` → lab, `/api/documents/*` → documents, `/api/photo/*` → photo, `/api/*` → backend, `/auth/*`, `/apps/*`, `/health` → auth-service |
 | `nftables.conf` | Файрвол (вместо сломанного UFW): 22/80/443/25 и пр. |
 | `.env.example` | Шаблон переменных (заглушки). Реальный `.env` — только на сервере |
 
@@ -18,6 +18,18 @@
 - Portainer: таймаут сессии; доступ только через SSH-туннель на 127.0.0.1:9000.
 
 ## История
+
+- **2026-08-28 — photo-service (Фотобанк):** добавлены `photo-db` (postgres) +
+  `photo` (Go), Caddy `/api/photo/*` → `photo:3000` (перед `/api/documents/*` и
+  `/api/*`), `.env`: `PHOTO_POSTGRES_*`, `PHOTO_OWNER_EMAIL`, `PHOTO_SERVICE_SECRET`,
+  `PHOTO_APP_USER`/`PHOTO_APP_PASSWORD`. auth-service: `seedApps` → seed приложения
+  `photo`. Бакет `sbe-photo` создан через rclone (ключи из `.env`). На сервере:
+  залиты compose/Caddyfile/seed.go, пересобраны `auth-service` + `photo`/`photo-db`,
+  создан app-пользователь `photo_app` (NOSUPERUSER + GRANT на схему public),
+  Caddy пересоздан (`--force-recreate`, Caddyfile живёт в `./caddy/Caddyfile`),
+  E2E зелёный (2026-08-28). Бэкапы `docker-compose.yml.bak-photo-20260828`,
+  `Caddyfile.bak-photo-20260828`. ВАЖНО: локальный compose синхронизирован с
+  серверным (в т.ч. LAB_SMTP-блок lab-service от 2026-08-28).
 
 - **2026-08-25 — динамический `/registry.json`:** маршрут перенаправлен со статики на
   `auth-service` (публичный `GET /registry.json` = база из `./www/registry.json`

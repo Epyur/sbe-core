@@ -26,6 +26,10 @@ https://{$DOMAIN} {
 		reverse_proxy documents:3000
 	}
 
+	handle /api/photo/* {
+		reverse_proxy photo:3000
+	}
+
 	handle /api/* {
 		reverse_proxy backend:3000
 	}

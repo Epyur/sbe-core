@@ -59,6 +59,13 @@ func (s *Server) seedApps(ctx context.Context) error {
 		os.Getenv("CONTACTS_SERVICE_SECRET")); err != nil {
 		return err
 	}
+	if err := seedApp(ctx, s,
+		envOr("PHOTO_APP_ID", "photo"),
+		envOr("PHOTO_APP_NAME", "Photobank"),
+		os.Getenv("PHOTO_OWNER_EMAIL"),
+		os.Getenv("PHOTO_SERVICE_SECRET")); err != nil {
+		return err
+	}
 	return seedApp(ctx, s,
 		envOr("AGENT_APP_ID", "agent"),
 		envOr("AGENT_APP_NAME", "Agent"),

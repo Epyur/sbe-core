@@ -33,6 +33,12 @@ design-токены. **Не плагин** (нет `manifest.json`; Obsidian е�
 
 ## История работ
 
+### 2026-08-28 — RegistryPluginEntry.appId (динамический белый список токенов)
+- В `RegistryPluginEntry` добавлено поле `appId?: string` — маркер «у плагина есть
+  серверная часть». ЦУП (sbe-apstore 0.3.12) строит из таких записей динамический
+  белый список выдачи токенов `getToken` (вместо хардкода из v0.3.8). Аддитивно;
+  существующие плагины не пересобираются.
+
 ### 2026-08-28 — обратная связь в SbeAuthApi (sendFeedback)
 - `SbeAuthApi`: новый метод `sendFeedback(input: SendFeedbackInput)` (эндпоинт
   `POST /auth/feedback` в auth-service, см. `auth-service/AGENTS.md`) + тип

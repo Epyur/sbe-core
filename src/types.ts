@@ -20,6 +20,9 @@ export interface RegistryPluginEntry {
   /** Email владельца продукта (первый admin плагина). Источник истины — реестр,
    *  используется plugin-service при bootstrap прав. */
   ownerEmail?: string;
+  /** app_id серверного приложения (маркер «есть серверная часть»). ЦУП строит из
+   *  таких записей динамический белый список выдачи токенов (getToken). */
+  appId?: string;
   /** SHA-256 (hex, lowercase) файлов для контроля целостности при установке
    *  (ревью B4). Отсутствие = установка без проверки (с предупреждением). */
   hashes?: { manifest?: string; main?: string; styles?: string };
@@ -393,6 +396,9 @@ export interface DashboardChartMeta {
 /** API плагина «LogicTEAM.007» (универсальный LLM-агент). open() — точка входа из ЦУП. */
 export interface SbeAgentApi extends SbeOpenableApi {}
 
+/** API плагина «LogicTEAM.Фотобанк». open() — точка входа из ЦУП. */
+export interface SbePhotobankApi extends SbeOpenableApi {}
+
 /** Словарь сервисов: ключ — id плагина, значение — его типизированное API. */
 export interface SbeServiceMap {
   'sbe-apstore': SbeApstoreApi;
@@ -406,6 +412,7 @@ export interface SbeServiceMap {
   'sbe-lims-mobile': SbeLimsMobileApi;
   'sbe-llm': SbeLlmApi;
   'sbe-mailer': SbeMailApi;
+  'sbe-photobank': SbePhotobankApi;
   'sbe-presentations': SbePresentationsApi;
   'sbe-requests': SbeRequestsApi;
   'sbe-tasks': SbeTasksApi;

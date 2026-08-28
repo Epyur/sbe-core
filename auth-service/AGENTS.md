@@ -45,6 +45,10 @@ docker compose exec auth-service wget -qO- http://localhost:3000/health
 
 ## История
 
+- **2026-08-28 — seed приложения `photo`:** `seedApps` дополнен `PHOTO_*` (app_id
+  `photo`, owner polishchuk@tn.ru, PHOTO_SERVICE_SECRET). На сервере пересобран
+  `auth-service`; приложение `photo` зарегистрировано (см. photo-service/AGENTS.md,
+  sbe-photobank Этап 2).
 - **2026-08-28 — Обратная связь (`POST /auth/feedback`).** Авторизованный
   пользователь (Bearer <мастер-ключ>, `requireKey`) оставляет обращение
   `{plugin_id, text}`. Получатель определяется по реестру: для известного
