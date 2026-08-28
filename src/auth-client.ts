@@ -11,6 +11,7 @@ import type {
   PresenceInfo,
   RegistryAddition,
   RegistryPluginInput,
+  SendFeedbackInput,
 } from './types';
 
 export interface AuthServiceConfig {
@@ -279,6 +280,15 @@ export class AuthService {
   /** Динамический реестр: удалить запись. */
   async removeRegistryAddition(registryId: number): Promise<void> {
     await this.authorizedRequest('DELETE', `/auth/registry/${registryId}`);
+  }
+
+  /** Обратная связь (Bearer <мастер-ключ>): замечание уходит владельцу выбранного
+   *  плагина (ownerEmail из реестра), пустой pluginId («идея») — собственнику ЦУП. */
+  async sendFeedback(input: SendFeedbackInput): Promise<void> {
+    await this.authorizedRequest('POST', '/auth/feedback', {
+      plugin_id: input.pluginId,
+      text: input.text,
+    });
   }
 
   /** Как authorized(), но 403 здесь означает не «ключ недействителен», а

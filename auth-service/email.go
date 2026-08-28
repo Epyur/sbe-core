@@ -7,7 +7,18 @@ import (
 	"os"
 )
 
+// sendKeyEmail — доставка ключа доступа на email (обёртка над sendMail).
 func sendKeyEmail(to, key string) error {
+	body := fmt.Sprintf(
+		"Ваш ключ доступа к серверу SBE:\n\n%s\n\n"+
+			"Ключ привязан к вашему email и устройству, используется один раз при активации и далее хранится в плагине.\n"+
+			"Если вы не запрашивали этот ключ, проигнорируйте письмо.\n", key)
+	return sendMail(to, "Ключ доступа к серверу SBE", body)
+}
+
+// sendMail — универсальная отправка текстового письма (UTF-8) через SMTP.
+// Используется для ключей доступа (sendKeyEmail) и обратной связи (/auth/feedback).
+func sendMail(to, subject, body string) error {
 	host := os.Getenv("SMTP_HOST")
 	if host == "" {
 		host = "localhost"
@@ -24,13 +35,9 @@ func sendKeyEmail(to, key string) error {
 	pass := os.Getenv("SMTP_PASS")
 	skipVerify := os.Getenv("SMTP_SKIP_VERIFY") == "1"
 
-	body := fmt.Sprintf(
-		"Ваш ключ доступа к серверу SBE:\n\n%s\n\n"+
-			"Ключ привязан к вашему email и устройству, используется один раз при активации и далее хранится в плагине.\n"+
-			"Если вы не запрашивали этот ключ, проигнорируйте письмо.\n", key)
 	msg := fmt.Sprintf(
-		"From: %s\r\nTo: %s\r\nSubject: Ключ доступа к серверу SBE\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s",
-		from, to, body)
+		"From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n%s",
+		from, to, subject, body)
 
 	addr := fmt.Sprintf("%s:%s", host, port)
 

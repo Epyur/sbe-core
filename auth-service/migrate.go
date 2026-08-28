@@ -96,6 +96,19 @@ func (s *Server) migrate(ctx context.Context) error {
 			applied_at   TIMESTAMPTZ,
 			PRIMARY KEY (app_id, env_key)
 		)`,
+		// Обратная связь (ЦУП, 2026-08-28): журнал обращений пользователей —
+		// замечания уходят владельцу выбранного плагина, «идеи» — собственнику
+		// ЦУП. Статус фиксирует исход доставки (sent/failed).
+		`CREATE TABLE IF NOT EXISTS feedback_messages (
+			id           SERIAL PRIMARY KEY,
+			author_email TEXT NOT NULL,
+			plugin_id    TEXT NOT NULL DEFAULT '',
+			plugin_name  TEXT NOT NULL DEFAULT '',
+			recipient    TEXT NOT NULL DEFAULT '',
+			text         TEXT NOT NULL DEFAULT '',
+			status       TEXT NOT NULL DEFAULT 'sent',
+			created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+		)`,
 	}
 	for _, stmt := range stmts {
 		if _, err := s.pool.Exec(ctx, stmt); err != nil {

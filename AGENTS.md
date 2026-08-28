@@ -33,6 +33,14 @@ design-токены. **Не плагин** (нет `manifest.json`; Obsidian е�
 
 ## История работ
 
+### 2026-08-28 — обратная связь в SbeAuthApi (sendFeedback)
+- `SbeAuthApi`: новый метод `sendFeedback(input: SendFeedbackInput)` (эндпоинт
+  `POST /auth/feedback` в auth-service, см. `auth-service/AGENTS.md`) + тип
+  `SendFeedbackInput` {pluginId, text}. Замечание уходит владельцу плагина
+  (ownerEmail из реестра), пустой pluginId («идея») — собственнику ЦУП.
+- Реализация в `auth-client.ts` (Bearer <мастер-ключ>). Аддитивно; потребитель —
+  sbe-apstore (0.3.10, форма «Обратная связь»). Другие плагины не пересобирались.
+
 ### 2026-08-27 — SbeDashboardsApi + listCharts
 - Добавлены `SbeDashboardsApi extends SbeOpenableApi` (метод `listCharts(): Promise<
   DashboardChartMeta[]>`, тип `DashboardChartMeta` {id, slug, title, source,

@@ -134,6 +134,17 @@ export interface SbeAuthApi {
   addRegistryPlugin(plugin: RegistryPluginInput): Promise<{ id: number }>;
   /** Только для администратор — удалить запись из динамического реестра. */
   removeRegistryAddition(registryId: number): Promise<void>;
+  /** Отправить обращение в ЦУП (Bearer <мастер-ключ>): замечание уходит владельцу
+   *  выбранного плагина, «идея» (пустой pluginId) — собственнику ЦУП. */
+  sendFeedback(input: SendFeedbackInput): Promise<void>;
+}
+
+/** Обращение из формы «Обратная связь» ЦУП (auth-service /auth/feedback). */
+export interface SendFeedbackInput {
+  /** id плагина из реестра; пустая строка = «Есть идея» (уходит собственнику ЦУП). */
+  pluginId: string;
+  /** Текст предложения или замечания. */
+  text: string;
 }
 
 /** Управление service_secret приложения (auth-service /auth/apps/secret, admin). */

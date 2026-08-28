@@ -91,6 +91,7 @@ func main() {
 	mux.HandleFunc("GET /auth/news", s.requireKey(s.handleListNews))
 	mux.HandleFunc("POST /auth/news/{id}/ack", s.requireKey(s.handleAckNews))
 	mux.HandleFunc("GET /auth/news/{id}/reads", s.requireKey(s.handleNewsReads))
+	mux.HandleFunc("POST /auth/feedback", s.requireKey(s.handleFeedback))
 	mux.HandleFunc("GET /auth/apps/secret", s.requireKey(s.handleAppSecretStatus))
 	mux.HandleFunc("POST /auth/apps/secret", s.requireKey(s.handleAppSecretAction))
 	mux.HandleFunc("GET /auth/apps/env", s.requireKey(s.handleAppEnvStatus))

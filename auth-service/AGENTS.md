@@ -2,7 +2,7 @@
 
 Серверный Go-сервис авторизации («паспортный стол») для SBE-плагинов.
 Контейнер `auth-service` + отдельная БД `auth` (postgres `auth-db`).
-Деплой: `/opt/mailers/auth-service/` (копия этой папки).
+Деплой на VDS: копия этой папки в рабочую папку Docker-стека (путь — вне git, см. рабочую документацию).
 
 ## Назначение
 
@@ -26,6 +26,7 @@
 | GET | `/auth/news` | сообщения, видимые вызывающему, с флагом `read` (Bearer <key>) |
 | POST | `/auth/news/{id}/ack` | отметить прочитанным (Bearer <key>) |
 | GET | `/auth/news/{id}/reads` | кто из адресатов прочитал — только admin (Bearer <key>) |
+| POST | `/auth/feedback` | обратная связь `{plugin_id, text}` (Bearer <key>): письмо владельцу плагина (ownerEmail из реестра) или, при пустом `plugin_id` («идея»), собственнику ЦУП (первый `ADMIN_EMAILS`); журнал `feedback_messages` |
 | POST | `/apps/register` | регистрация plugin-service |
 
 ## Конфиг (env)
@@ -43,6 +44,19 @@ docker compose exec auth-service wget -qO- http://localhost:3000/health
 ```
 
 ## История
+
+- **2026-08-28 — Обратная связь (`POST /auth/feedback`).** Авторизованный
+  пользователь (Bearer <мастер-ключ>, `requireKey`) оставляет обращение
+  `{plugin_id, text}`. Получатель определяется по реестру: для известного
+  плагина — его `ownerEmail` (база `/srv/www/registry.json` + добавления
+  `registry_additions`), при отсутствии ownerEmail — первый `ADMIN_EMAILS`;
+  пустой `plugin_id` («Есть идея») — первый `ADMIN_EMAILS` (собственник ЦУП).
+  Письмо уходит через общий `sendMail` (email.go рефакторинг: из `sendKeyEmail`
+  вынесен универсальный `sendMail(to, subject, body)`). Журнал `feedback_messages`
+  (автор, плагин, получатель, текст, status `sent`/`failed`) — обращение не
+  теряется при сбое SMTP. Валидации: текст обязателен и ≤ 4000 симв., неизвестный
+  плагин → 400. Клиент — `sbe-apstore` 0.3.10 (`auth.sendFeedback`). `go build`/
+  `go vet`/`go test` — чисто.
 
 - **2026-08-26 — Generic admin-канал для произвольных env-переменных приложений
   (`app_env_pending`), первый потребитель — `LAB_MAIL_*` (учётка почты
@@ -70,7 +84,7 @@ docker compose exec auth-service wget -qO- http://localhost:3000/health
     `isValidEnvValue` — отвергает `\r`/`\n`/`\x00` (перевод строки в значении
     сломал бы построчный парсинг хост-скрипта — `secret-applier.sh` читает
     `psql`-вывод по одной строке на пару ключ-значение) и значения длиннее 4096.
-  - `secret-applier.sh` (хост-скрипт, `/opt/mailers/`, НЕ в git — правится
+  - `secret-applier.sh` (хост-скрипт на сервере, НЕ в git — правится
     напрямую по ssh) расширен вторым циклом: несколько pending-строк одного
     `app_id` группируются, чтобы пересоздать контейнер ОДИН раз (не на каждый
     ключ); запись в `.env` — через `awk -v` (НЕ `sed`), т.к. значение (пароль
@@ -98,7 +112,7 @@ docker compose exec auth-service wget -qO- http://localhost:3000/health
   - `secret_admin.go`: admin-эндпоинты (мастер-ключ устройства + `ADMIN_EMAILS`)
     `GET/POST /auth/apps/secret` — статус / sync (`apps.service_secret` ← env
     `{APP}_SERVICE_SECRET`) / rotate (генерация нового 32-байтного hex + очередь в
-    таблицу `secret_rotations`; применяет хост-скрипт `/opt/mailers/secret-applier.sh`
+    таблицу `secret_rotations`; применяет хост-скрипт `secret-applier.sh`
     по cron: обновляет `.env`, `apps` и пересоздаёт контейнер сервиса). Журнал
     `secret_audit`. В `apps` добавлена колонка `updated_at`.
   - `registry_admin.go`: динамический реестр плагинов — таблица `registry_additions`,
