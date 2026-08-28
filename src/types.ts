@@ -20,6 +20,9 @@ export interface RegistryPluginEntry {
   /** Email владельца продукта (первый admin плагина). Источник истины — реестр,
    *  используется plugin-service при bootstrap прав. */
   ownerEmail?: string;
+  /** app_id серверного приложения (маркер «есть серверная часть»). ЦУП строит из
+   *  таких записей динамический белый список выдачи токенов (getToken). */
+  appId?: string;
   /** SHA-256 (hex, lowercase) файлов для контроля целостности при установке
    *  (ревью B4). Отсутствие = установка без проверки (с предупреждением). */
   hashes?: { manifest?: string; main?: string; styles?: string };
@@ -134,6 +137,17 @@ export interface SbeAuthApi {
   addRegistryPlugin(plugin: RegistryPluginInput): Promise<{ id: number }>;
   /** Только для администратор — удалить запись из динамического реестра. */
   removeRegistryAddition(registryId: number): Promise<void>;
+  /** Отправить обращение в ЦУП (Bearer <мастер-ключ>): замечание уходит владельцу
+   *  выбранного плагина, «идея» (пустой pluginId) — собственнику ЦУП. */
+  sendFeedback(input: SendFeedbackInput): Promise<void>;
+}
+
+/** Обращение из формы «Обратная связь» ЦУП (auth-service /auth/feedback). */
+export interface SendFeedbackInput {
+  /** id плагина из реестра; пустая строка = «Есть идея» (уходит собственнику ЦУП). */
+  pluginId: string;
+  /** Текст предложения или замечания. */
+  text: string;
 }
 
 /** Управление service_secret приложения (auth-service /auth/apps/secret, admin). */
@@ -356,11 +370,34 @@ export interface SbeEknApi extends SbeOpenableApi {
 /** API плагина «ЛИМС». open() — точка входа из ЦУП. */
 export interface SbeLimsApi extends SbeOpenableApi {}
 
+/** API плагина «ЛИМС Мобайл» (сканирование QR → ввод результатов/калибровки на
+ * планшете испытателя). open() — точка входа из мини-магазина sbe-mobile. */
+export interface SbeLimsMobileApi extends SbeOpenableApi {}
+
 /** API плагина «Контакты». open() — точка входа из ЦУП. */
 export interface SbeContactsApi extends SbeOpenableApi {}
 
+/** API плагина «LogicTEAM.Дашборды». open() — точка входа из ЦУП;
+ *  listCharts() — список доступных графиков дашборда (для презентаций и др.). */
+export interface SbeDashboardsApi extends SbeOpenableApi {
+  listCharts(): Promise<DashboardChartMeta[]>;
+}
+
+/** Метаданные графика дашборда для внешних потребителей. */
+export interface DashboardChartMeta {
+  id: string;
+  slug: string;
+  title: string;
+  source: string;
+  description: string;
+  updatedAt: number;
+}
+
 /** API плагина «LogicTEAM.007» (универсальный LLM-агент). open() — точка входа из ЦУП. */
 export interface SbeAgentApi extends SbeOpenableApi {}
+
+/** API плагина «LogicTEAM.Фотобанк». open() — точка входа из ЦУП. */
+export interface SbePhotobankApi extends SbeOpenableApi {}
 
 /** Словарь сервисов: ключ — id плагина, значение — его типизированное API. */
 export interface SbeServiceMap {
@@ -368,11 +405,14 @@ export interface SbeServiceMap {
   'sbe-agent': SbeAgentApi;
   'sbe-calendar': SbeCalendarApi;
   'sbe-contacts': SbeContactsApi;
+  'sbe-dashboards': SbeDashboardsApi;
   'sbe-documents': SbeDocumentsApi;
   'sbe-ekn': SbeEknApi;
   'sbe-lims': SbeLimsApi;
+  'sbe-lims-mobile': SbeLimsMobileApi;
   'sbe-llm': SbeLlmApi;
   'sbe-mailer': SbeMailApi;
+  'sbe-photobank': SbePhotobankApi;
   'sbe-presentations': SbePresentationsApi;
   'sbe-requests': SbeRequestsApi;
   'sbe-tasks': SbeTasksApi;

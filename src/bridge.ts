@@ -81,8 +81,14 @@ function getServiceName(id: string): string {
       return 'Справочник ЕКН';
     case 'sbe-lims':
       return 'ЛИМС';
+    case 'sbe-lims-mobile':
+      return 'ЛИМС Мобайл';
     case 'sbe-contacts':
       return 'Контакты';
+    case 'sbe-photobank':
+      return 'LogicTEAM.Фотобанк';
+    case 'sbe-dashboards':
+      return 'LogicTEAM.Дашборды';
     case 'sbe-agent':
       return 'LogicTEAM.007';
     case 'sbe-yougile':
