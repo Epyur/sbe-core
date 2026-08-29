@@ -109,6 +109,19 @@ func (s *Server) migrate(ctx context.Context) error {
 			status       TEXT NOT NULL DEFAULT 'sent',
 			created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 		)`,
+		// Инструмент ручной загрузки файлов плагина (ЦУП, 2026-08-29) — см.
+		// docs/superpowers/specs/2026-08-29-sbe-plugin-file-upload-design.md. Одна
+		// строка на dir реестра — оверлей поверх статического registry.json/
+		// registry_additions (тот же паттерн), не мутирует их. Наличие строки для
+		// dir'а — единственный сигнал клиенту (registry.ts) переключиться на раздачу
+		// файлов с epyur.fvds.ru/plugins/* вместо raw.githubusercontent.com
+		// (handleRegistryJSON проставляет selfHosted:true, см. registry_admin.go).
+		`CREATE TABLE IF NOT EXISTS registry_file_overrides (
+			dir         TEXT PRIMARY KEY,
+			hashes      JSONB NOT NULL,
+			uploaded_by TEXT NOT NULL,
+			uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
+		)`,
 	}
 	for _, stmt := range stmts {
 		if _, err := s.pool.Exec(ctx, stmt); err != nil {

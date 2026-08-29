@@ -282,6 +282,45 @@ export class AuthService {
     await this.authorizedRequest('DELETE', `/auth/registry/${registryId}`);
   }
 
+  /** Инструмент ручной загрузки файлов плагина (2026-08-29, см. docs/superpowers/
+   *  specs/2026-08-29-sbe-plugin-file-upload-design.md) — владелец записи реестра
+   *  (или admin) заливает собранные main.js/manifest.json/styles.css без доступа к
+   *  серверу по SSH. Сервер сам считает SHA-256 от принятых байт и обновляет
+   *  registry_file_overrides — hashes/selfHosted в ответе GET /registry.json
+   *  появляются сразу после успешной загрузки, без отдельного шага. styles —
+   *  опционален (не у каждого плагина есть стили); main/manifest обязательны. */
+  async uploadRegistryFiles(
+    dir: string,
+    files: { main: ArrayBuffer; manifest: ArrayBuffer; styles?: ArrayBuffer },
+  ): Promise<{ hashes: Record<string, string> }> {
+    const key = this.requireKey();
+    const boundary = '----sbe-registry-upload-' + Date.now().toString(36);
+    const parts: Array<{ name: string; fileName: string; data: ArrayBuffer }> = [
+      { name: 'main', fileName: 'main.js', data: files.main },
+      { name: 'manifest', fileName: 'manifest.json', data: files.manifest },
+    ];
+    if (files.styles) parts.push({ name: 'styles', fileName: 'styles.css', data: files.styles });
+    const body = buildMultipartForm(boundary, { dir }, parts);
+    const res = await this.request({
+      url: `${this.baseUrl}/auth/registry/upload`,
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      },
+      body,
+    }, 60000);
+    if (res.status === 401) {
+      this.invalidateKey(res);
+      throw new Error(this.errorText(res) || 'Ключ недействителен. Запросите новый ключ.');
+    }
+    if (res.status < 200 || res.status >= 300) {
+      throw new Error(this.errorText(res) || `HTTP ${res.status}`);
+    }
+    const data = JSON.parse(res.text) as { hashes?: Record<string, string> };
+    return { hashes: data.hashes ?? {} };
+  }
+
   /** Обратная связь (Bearer <мастер-ключ>): замечание уходит владельцу выбранного
    *  плагина (ownerEmail из реестра), пустой pluginId («идея») — собственнику ЦУП. */
   async sendFeedback(input: SendFeedbackInput): Promise<void> {
@@ -394,4 +433,37 @@ export class AuthService {
       if (timer !== undefined) window.clearTimeout(timer);
     }
   }
+}
+
+/** multipart/form-data тело: текстовые поля + файлы (тот же паттерн, что уже
+ *  используется для загрузки файлов в sbe-requests/sbe-lims, см.
+ *  uploadRegistryFiles выше). */
+function buildMultipartForm(
+  boundary: string,
+  fields: Record<string, string>,
+  files: Array<{ name: string; fileName: string; data: ArrayBuffer }>,
+): ArrayBuffer {
+  const enc = new TextEncoder();
+  const parts: Uint8Array[] = [];
+  for (const [name, value] of Object.entries(fields)) {
+    parts.push(enc.encode(`--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`));
+  }
+  for (const file of files) {
+    parts.push(enc.encode(
+      `--${boundary}\r\nContent-Disposition: form-data; name="${file.name}"; filename="${file.fileName}"\r\nContent-Type: application/octet-stream\r\n\r\n`,
+    ));
+    parts.push(new Uint8Array(file.data));
+    parts.push(enc.encode('\r\n'));
+  }
+  parts.push(enc.encode(`--${boundary}--\r\n`));
+
+  let total = 0;
+  for (const p of parts) total += p.byteLength;
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const p of parts) {
+    out.set(p, off);
+    off += p.byteLength;
+  }
+  return out.buffer;
 }

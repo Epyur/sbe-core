@@ -26,6 +26,15 @@ export interface RegistryPluginEntry {
   /** SHA-256 (hex, lowercase) файлов для контроля целостности при установке
    *  (ревью B4). Отсутствие = установка без проверки (с предупреждением). */
   hashes?: { manifest?: string; main?: string; styles?: string };
+  /** true — файлы загружены через POST /auth/registry/upload и раздаются с
+   *  epyur.fvds.ru/plugins/<dir>/*, а не с raw.githubusercontent.com (2026-08-29,
+   *  см. docs/superpowers/specs/2026-08-29-sbe-plugin-file-upload-design.md).
+   *  Проставляется ТОЛЬКО сервером в handleRegistryJSON — не поле для ручной правки. */
+  selfHosted?: boolean;
+  /** Кто/когда последний раз загрузил файлы через POST /auth/registry/upload —
+   *  только вместе с selfHosted, для отображения в «Мои плагины» (sbe-apstore). */
+  uploadedBy?: string;
+  uploadedAt?: string;
 }
 
 export interface RegistryFile {
@@ -404,8 +413,40 @@ export interface DashboardChartMeta {
 /** API плагина «LogicTEAM.007» (универсальный LLM-агент). open() — точка входа из ЦУП. */
 export interface SbeAgentApi extends SbeOpenableApi {}
 
-/** API плагина «LogicTEAM.Фотобанк». open() — точка входа из ЦУП. */
-export interface SbePhotobankApi extends SbeOpenableApi {}
+/** Метаданные фотографии фотобанка для внешних потребителей (агент, презентации). */
+export interface PhotobankPhotoMeta {
+  id: number;
+  folder_id: number;
+  /** Название/путь папки («Родитель / Подпапка») — локально заполняется фотобанком. */
+  folder_name: string;
+  title: string;
+  description: string;
+  tags: string[];
+  file_key: string;
+  file_name: string;
+  mime_type: string;
+  /** image|video|raw */
+  kind: string;
+  width: number;
+  height: number;
+  thumb_key: string;
+  author_email: string;
+  location: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** API плагина «LogicTEAM.Фотобанк». open() — точка входа из ЦУП;
+ *  searchPhotos/downloadPhotoFile/getPhotoLink — для внешних потребителей
+ *  (агент ищет фото по запросу, презентации берут фото как иллюстрации). */
+export interface SbePhotobankApi extends SbeOpenableApi {
+  /** Свободный поиск фото (серверный FTS по описанию/тегам/названиям папок). */
+  searchPhotos(query: string, opts?: { limit?: number; folderId?: number; kind?: string }): Promise<PhotobankPhotoMeta[]>;
+  /** Скачивает оригинал файла из S3. view=true — просмотр превью (счётчик скачиваний не растёт). */
+  downloadPhotoFile(fileKey: string, view?: boolean): Promise<ArrayBuffer>;
+  /** Временная публичная ссылка на файл (presigned через rclone, ~7 дней). */
+  getPhotoLink(fileKey: string): Promise<string>;
+}
 
 /** Словарь сервисов: ключ — id плагина, значение — его типизированное API. */
 export interface SbeServiceMap {

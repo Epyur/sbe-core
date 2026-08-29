@@ -99,6 +99,7 @@ func main() {
 	mux.HandleFunc("GET /auth/registry", s.requireKey(s.handleRegistryList))
 	mux.HandleFunc("POST /auth/registry", s.requireKey(s.handleRegistryAdd))
 	mux.HandleFunc("DELETE /auth/registry/{id}", s.requireKey(s.handleRegistryDelete))
+	mux.HandleFunc("POST /auth/registry/upload", s.requireKey(s.handleRegistryUpload))
 	mux.HandleFunc("GET /registry.json", s.handleRegistryJSON)
 	mux.HandleFunc("POST /apps/register", s.handleRegisterApp)
 	// Внутренний эндпоинт служебных токенов (lab→ekn): Caddy НЕ проксирует

@@ -11,6 +11,16 @@ export function rawUrl(repo: string, branch: string, file: string): string {
   return `https://raw.githubusercontent.com/${repo}/${branch}/${file}`;
 }
 
+/** Откуда качать файл конкретной записи реестра — раздача с epyur.fvds.ru/plugins/*,
+ * если entry.selfHosted (2026-08-29, см. docs/superpowers/specs/
+ * 2026-08-29-sbe-plugin-file-upload-design.md), иначе как раньше — raw.githubusercontent.com
+ * (repo/branch). Единственное место, что решает этот выбор — installer.ts и
+ * fetchRemoteManifest ниже оба идут через эту функцию, не дублируют условие. */
+export function pluginFileUrl(entry: Pick<RegistryPluginEntry, 'dir' | 'repo' | 'branch' | 'selfHosted'>, file: string): string {
+  if (entry.selfHosted) return `https://epyur.fvds.ru/plugins/${entry.dir}/${file}`;
+  return rawUrl(entry.repo, entry.branch || 'main', file);
+}
+
 /** Семантическое сравнение версий x.y.z: true, если remote новее local. */
 export function isNewer(remote: string, local: string): boolean {
   const r = remote.split('.').map(Number);
@@ -39,8 +49,7 @@ export async function fetchRegistry(url: string): Promise<RegistryFile> {
 
 /** Скачивает manifest.json плагина из его репозитория. */
 export async function fetchRemoteManifest(entry: RegistryPluginEntry): Promise<RemoteManifest> {
-  const branch = entry.branch || 'main';
-  return fetchJson<RemoteManifest>(rawUrl(entry.repo, branch, 'manifest.json'));
+  return fetchJson<RemoteManifest>(pluginFileUrl(entry, 'manifest.json'));
 }
 
 export { PLUGIN_FILES as INSTALL_FILES };

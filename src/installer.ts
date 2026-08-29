@@ -1,6 +1,6 @@
 import { App, Notice, requestUrl } from 'obsidian';
 import type { RegistryPluginEntry, RemoteManifest } from './types';
-import { INSTALL_FILES, rawUrl } from './registry';
+import { INSTALL_FILES, pluginFileUrl } from './registry';
 import { errorMessage } from './utils/errors';
 
 export interface InstallResult {
@@ -91,6 +91,7 @@ export async function installPlugin(
     repo: string;
     branch: string;
     hashes?: RegistryPluginEntry['hashes'];
+    selfHosted?: boolean;
     /** Пропустить clearRequireCache + disable/enable — для самообновления плагина-установщика
      *  (перезагрузка самого себя во время выполнения небезопасна; после записи файлов
      *  вызывающий показывает пользователю кнопку перезапуска Obsidian). */
@@ -110,7 +111,7 @@ export async function installPlugin(
 
     let integrityChecked = false;
     for (const file of INSTALL_FILES) {
-      const url = rawUrl(repo, branch, file);
+      const url = pluginFileUrl({ dir, repo, branch, selfHosted: opts.selfHosted }, file);
       const res = await requestUrl({ url, method: 'GET', throw: false });
       if (res.status >= 400) throw new Error(`HTTP ${res.status} для ${file}`);
 

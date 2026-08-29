@@ -46,6 +46,15 @@ https://{$DOMAIN} {
 		reverse_proxy auth-service:3000
 	}
 
+	# Инструмент ручной загрузки файлов плагина (2026-08-29) — статическая раздача
+	# файлов, загруженных через POST /auth/registry/upload (auth-service пишет в
+	# ./www/plugins/<dir>/, тот же хост-каталог, что уже смонтирован сюда read-only
+	# как часть /srv/www). См. docs/superpowers/specs/2026-08-29-sbe-plugin-file-upload-design.md.
+	handle /plugins/* {
+		root * /srv/www
+		file_server
+	}
+
 	handle {
 		respond "Mailers stack is up"
 	}

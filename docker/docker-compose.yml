@@ -104,6 +104,12 @@ services:
       # Базовый registry.json для динамической выдачи GET /registry.json
       # (база + записи, добавленные администратором из ЦУП).
       - ./www:/srv/www:ro
+      # Инструмент ручной загрузки файлов плагина (2026-08-29, POST
+      # /auth/registry/upload) — отдельный RW-монт только под вложенную папку,
+      # родительский /srv/www остаётся read-only (сервис не должен уметь писать
+      # сам registry.json — это по-прежнему только ручной git+scp, см.
+      # registry_file_overrides в registry_admin.go).
+      - ./www/plugins:/srv/www/plugins:rw
     depends_on:
       auth-db:
         condition: service_healthy
