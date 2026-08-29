@@ -204,15 +204,14 @@ services:
       LAB_MAIL_METHOD_MAP: ${LAB_MAIL_METHOD_MAP:-}
       LAB_MAIL_LAB_ID: ${LAB_MAIL_LAB_ID:-}
       # Исходящая почта (WP2, 2026-08-28) — результаты заказчику + дубль в LPITrack, см.
-      # lab-service/AGENTS.md. Тот же host.docker.internal/SKIP_VERIFY, что уже рабочий
-      # паттерн у auth-service SMTP_* (localhost изнутри контейнера lab недостижим —
-      # exim слушает на хосте, не в сети контейнера). LAB_LPITRACK_EMAIL переиспользует
-      # тот же ящик lpitn@yandex.ru, что уже используется для ЧТЕНИЯ (LAB_MAIL_LOGIN) —
-      # легаси десктопная ЛИМС мониторит его же как свой инбокс.
-      LAB_SMTP_HOST: host.docker.internal
-      LAB_SMTP_PORT: "25"
-      LAB_SMTP_FROM: ${SMTP_FROM}
-      LAB_SMTP_SKIP_VERIFY: "1"
+      # lab-service/AGENTS.md. С 2026-08-29 — аутентифицированная отправка через ТОТ ЖЕ
+      # внешний ящик, с которого принимаются заявки (LAB_MAIL_LOGIN/PASSWORD — реальный
+      # провайдер с валидным сертификатом/SPF/DKIM вместо локального exim-релея с
+      # самоподписанным сертификатом — письма попадали в спам). LAB_LPITRACK_EMAIL тоже
+      # переиспользует тот же ящик lpitn@yandex.ru, что уже используется для ЧТЕНИЯ.
+      LAB_SMTP_HOST: smtp.yandex.ru
+      LAB_SMTP_PORT: "587"
+      LAB_SMTP_FROM: ${LAB_MAIL_LOGIN:-}
       LAB_LPITRACK_EMAIL: ${LAB_MAIL_LOGIN:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
