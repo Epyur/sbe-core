@@ -41,6 +41,14 @@ design-токены. **Не плагин** (нет `manifest.json`; Obsidian е�
 
 ## История работ
 
+### 2026-08-29 — SbePhotobankApi: методы для внешних потребителей
+- `SbePhotobankApi` расширен (аддитивно): `searchPhotos(query, {limit, folderId,
+  kind})`, `downloadPhotoFile(fileKey, view?)`, `getPhotoLink(fileKey)` + тип
+  `PhotobankPhotoMeta` (метаданные фото для агента/презентаций).
+- Реализация — в `sbe-photobank` (v0.1.18); потребители — `sbe-agent`
+  (тулы `get_photos`/`get_photo_link`) и `sbe-presentations` (иллюстрации из
+  Фотобанка). Существующие плагины не пересобираются (правило 2026-08-20).
+
 ### 2026-08-29 — инструмент ручной загрузки файлов плагина (POST /auth/registry/upload)
 
 Спека/план: `docs/superpowers/specs/2026-08-29-sbe-plugin-file-upload-design.md` +
