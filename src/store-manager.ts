@@ -127,6 +127,7 @@ export class StoreManager {
       repo: entry.repo,
       branch: entry.branch || 'main',
       hashes: entry.hashes,
+      selfHosted: entry.selfHosted,
     });
     if (!res.ok) throw new Error(res.error || 'Не удалось установить');
     this.localManifests.set(entry.dir, await readLocalManifest(this.app, entry.dir));

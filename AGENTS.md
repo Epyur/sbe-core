@@ -41,6 +41,14 @@ design-токены. **Не плагин** (нет `manifest.json`; Obsidian е�
 
 ## История работ
 
+### 2026-08-29 — перенос из backend: клиентская часть инструмента ручной загрузки файлов
+
+`pluginFileUrl()` в `registry.ts` (GitHub raw vs `epyur.fvds.ru/plugins/*` по
+`entry.selfHosted`), `RegistryPluginEntry` += `selfHosted?`/`uploadedBy?`/
+`uploadedAt?`, `auth-client.ts` += `uploadRegistryFiles()`. Полная история
+(бэкенд/хранение/UI) — `AGENTS.md`/`docs/superpowers/specs/
+2026-08-29-sbe-plugin-file-upload-design.md` ветки `backend`.
+
 ### 2026-08-28 — RegistryPluginEntry.appId (динамический белый список токенов)
 - В `RegistryPluginEntry` добавлено поле `appId?: string` — маркер «у плагина есть
   серверная часть». ЦУП (sbe-apstore 0.3.12) строит из таких записей динамический
