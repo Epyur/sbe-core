@@ -45,6 +45,13 @@ docker compose exec auth-service wget -qO- http://localhost:3000/health
 
 ## История
 
+- **2026-08-29 — `allowedAppEnvKeys["lab"]` += `LAB_MAIL_DEFAULT_PROJECT_CODE`.**
+  Прямое продолжение фичи lab-service (проект по умолчанию для заявок из
+  письма без ЕКН, см. `lab-service/AGENTS.md`/`sbe-lims/AGENTS.md`) — новый
+  admin-управляемый ключ (не секрет, тот же канал, что остальные `LAB_MAIL_*`).
+  `TestAllowedAppEnvKeysLabWhitelist` обновлён (было 6 ключей, стало 7).
+  `go build`/`go vet`/`go test` — чисто. Задеплоено (`docker compose up -d
+  --build auth-service`), контрольная сумма файла совпала, health ok.
 - **2026-08-28 — seed приложения `photo`:** `seedApps` дополнен `PHOTO_*` (app_id
   `photo`, owner polishchuk@tn.ru, PHOTO_SERVICE_SECRET). На сервере пересобран
   `auth-service`; приложение `photo` зарегистрировано (см. photo-service/AGENTS.md,

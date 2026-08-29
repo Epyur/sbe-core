@@ -20,6 +20,11 @@ var allowedAppEnvKeys = map[string]map[string]bool{
 		"LAB_MAIL_PASSWORD":              true,
 		"LAB_MAIL_POLL_INTERVAL_SECONDS": true,
 		"LAB_MAIL_METHOD_MAP":            true,
+		// LAB_MAIL_DEFAULT_PROJECT_CODE (2026-08-29) — проект для заявок из
+		// письма без указанного ЕКН (см. lab-service/email_ingest.go
+		// applyApplicationEmail); не секрет, но тот же admin-only канал, что и
+		// остальные LAB_MAIL_* — согласованный UI/аудит в одном месте.
+		"LAB_MAIL_DEFAULT_PROJECT_CODE": true,
 	},
 }
 

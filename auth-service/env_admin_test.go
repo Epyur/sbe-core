@@ -49,6 +49,7 @@ func TestAllowedAppEnvKeysLabWhitelist(t *testing.T) {
 		"LAB_MAIL_PASSWORD",
 		"LAB_MAIL_POLL_INTERVAL_SECONDS",
 		"LAB_MAIL_METHOD_MAP",
+		"LAB_MAIL_DEFAULT_PROJECT_CODE",
 	}
 	if len(lab) != len(want) {
 		t.Fatalf("lab whitelist: got %d ключей, want %d: %v", len(lab), len(want), lab)
