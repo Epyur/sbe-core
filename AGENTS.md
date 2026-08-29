@@ -19,7 +19,15 @@ design-токены. **Не плагин** (нет `manifest.json`; Obsidian е�
 - `src/types.ts` — реестр (`RegistryPluginEntry`, `RegistryFile`), `SbeApstoreApi`, `SbeLlmApi`, `SbeYougileApi`, `SbeServiceMap` (типизированный словарь сервисов).
 - `src/bridge.ts` — мост `window.SBE`: `publishService`/`unpublishService`/`getServiceSync`/`getService` (поллинг 200 мс, таймаут 15 с, понятная ошибка с именем плагина).
 - `src/registry.ts` — `DEFAULT_REGISTRY_URL` (`raw.githubusercontent.com/Epyur/sbe-apstore-registry/main/registry.json`) + типы.
-- `src/installer.ts` — скачивание файлов плагина с `main`-ветки, запись адаптером, `require.cache` очистка, SHA-256 по хешам реестра; опция `skipReload` (самообновление установщика).
+- `src/installer.ts` — скачивание файлов плагина с `main`-ветки (`rawUrl()` →
+  `raw.githubusercontent.com/<repo>/<branch>/<file>`), запись адаптером,
+  `require.cache` очистка, SHA-256 по хешам реестра; опция `skipReload`
+  (самообновление установщика). **⚠️ При обновлении `hashes` в
+  `sbe-apstore-registry/registry.json` после релиза ЛЮБОГО SBE-плагина —
+  обязательный порядок с retry-проверкой против `raw.githubusercontent.com`
+  (не одна проверка, CDN этого домена пропагируется с задержкой) — см.
+  `sbe-apstore-registry/AGENTS.md`, было 2 живых инцидента с «Контрольная
+  сумма не совпадает» на проде из-за нарушения этого порядка.**
 - `src/auth-client.ts` — серверный auth-клиент `AuthService` (ключ на email+device_id, JWT, устройства, новости, presence, env, динамический реестр) — общий для `sbe-apstore` и `sbe-mobile` (перенесён 2026-08-26).
 - `src/store-manager.ts` — состояние магазина `StoreManager` (реестр, карточки, установка/обновление) — общий для `sbe-apstore` и `sbe-mobile` (перенесён 2026-08-26).
 - `src/utils/errors.ts` — `errorMessage(e: unknown)` для всех `catch`.
