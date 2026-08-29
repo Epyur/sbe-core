@@ -41,13 +41,60 @@ design-токены. **Не плагин** (нет `manifest.json`; Obsidian е�
 
 ## История работ
 
-### 2026-08-29 — перенос из backend: клиентская часть инструмента ручной загрузки файлов
+### 2026-08-29 — SbePhotobankApi: методы для внешних потребителей
+- `SbePhotobankApi` расширен (аддитивно): `searchPhotos(query, {limit, folderId,
+  kind})`, `downloadPhotoFile(fileKey, view?)`, `getPhotoLink(fileKey)` + тип
+  `PhotobankPhotoMeta` (метаданные фото для агента/презентаций).
+- Реализация — в `sbe-photobank` (v0.1.18); потребители — `sbe-agent`
+  (тулы `get_photos`/`get_photo_link`) и `sbe-presentations` (иллюстрации из
+  Фотобанка). Существующие плагины не пересобираются (правило 2026-08-20).
 
-`pluginFileUrl()` в `registry.ts` (GitHub raw vs `epyur.fvds.ru/plugins/*` по
-`entry.selfHosted`), `RegistryPluginEntry` += `selfHosted?`/`uploadedBy?`/
-`uploadedAt?`, `auth-client.ts` += `uploadRegistryFiles()`. Полная история
-(бэкенд/хранение/UI) — `AGENTS.md`/`docs/superpowers/specs/
-2026-08-29-sbe-plugin-file-upload-design.md` ветки `backend`.
+### 2026-08-29 — инструмент ручной загрузки файлов плагина (POST /auth/registry/upload)
+
+Спека/план: `docs/superpowers/specs/2026-08-29-sbe-plugin-file-upload-design.md` +
+`docs/superpowers/plans/2026-08-29-sbe-plugin-file-upload-plan.md` (та же
+инфраструктурная папка, что план `2026-08-29-sbe-release-pipeline-plan.md`, откуда
+растёт вся эта работа). Владелец плагина (или admin) заливает собранные
+`main.js`/`manifest.json`/`styles.css` через ЦУП без доступа к серверу по SSH.
+
+- **Бэкенд** (`auth-service`): новая таблица `registry_file_overrides` (dir → hashes/
+  uploaded_by/uploaded_at) — оверлей ПОВЕРХ найденной записи (базовый файл ИЛИ
+  `registry_additions`), не мутирует ни то, ни другое. `handleRegistryJSON`
+  проставляет найденной записи `selfHosted:true` + актуальные `hashes`, если для её
+  `dir` есть оверлей. Новый `registry_upload.go` `handleRegistryUpload` — `POST
+  /auth/registry/upload` (за `requireKey`), multipart (`dir` + `main`/`manifest`
+  обязательны, `styles` опционален); права — JWT-email == `ownerEmail` найденной
+  записи ИЛИ admin; записи с таким `dir` нет вовсе — 404 (регистрация НОВОГО
+  плагина — отдельный, уже существующий `handleRegistryAdd`, этот эндпоинт его не
+  трогает). SHA-256 считается сервером от реально записанных байт — клиенту не
+  доверяем. Частичная загрузка (без `styles`) не затирает прежний хэш `styles`.
+- **Хранение файлов**: новый RW-монт `./www/plugins:/srv/www/plugins:rw` у
+  `auth-service` (родительский `./www:/srv/www:ro` остаётся read-only — сервис
+  по-прежнему не может писать сам `registry.json`). Caddy — новый маршрут `/plugins/*
+  → file_server` из того же `/srv/www` (та же папка, что уже смонтирована туда
+  read-only).
+- **Клиент**: `registry.ts` — новая `pluginFileUrl(entry, file)` (единственное место,
+  что решает GitHub raw vs `epyur.fvds.ru/plugins/*`, по `entry.selfHosted`) —
+  `installer.ts`/`fetchRemoteManifest` оба переведены на неё вместо прямого
+  `rawUrl()`. `RegistryPluginEntry` += `selfHosted?`/`uploadedBy?`/`uploadedAt?`.
+  `auth-client.ts` — новый `uploadRegistryFiles(dir, files)` (ручной multipart,
+  `authorizedRequest` не подходит — она только JSON).
+- **UI** (`sbe-apstore`): новый раздел настроек «Мои плагины» — записи, где
+  `ownerEmail == текущий email` (admin — все), форма загрузки 3 файлов на каждую.
+- `go build`/`go vet`/`go test` (auth-service), `npx tsc --noEmit` (sbe-core,
+  sbe-apstore) — чисто. Задеплоено на VDS (`scp` + `docker compose build
+  auth-service` + `up -d --force-recreate auth-service caddy`), миграция прошла,
+  health ok. Смоук-тест эндпоинта без ключа/с фейковым ключом — оба 401 (не
+  404/502) — маршрут через Caddy реально доходит до `requireKey`.
+- **НЕ проверено этой сессией**: реальная загрузка через сам эндпоинт с настоящим
+  ключом устройства (нет способа получить/подделать реальный JWT/device-key
+  пользователя без его участия — это единственное, что осталось для полного
+  дозаписи sbe-lims-mobile через новый механизм). Пользователю нужно либо открыть
+  «Мои плагины» в ЦУП и загрузить файлы sbe-lims-mobile через форму, либо иначе
+  подтвердить: `GET https://epyur.fvds.ru/registry.json` после загрузки должен
+  показать `selfHosted:true` у записи `sbe-lims-mobile`, и
+  `https://epyur.fvds.ru/plugins/sbe-lims-mobile/main.js` должен отдавать 200 с
+  правильным содержимым.
 
 ### 2026-08-28 — RegistryPluginEntry.appId (динамический белый список токенов)
 - В `RegistryPluginEntry` добавлено поле `appId?: string` — маркер «у плагина есть
