@@ -254,6 +254,14 @@ export interface SbeLlmApi {
     user: string,
     opts?: { model?: string; temperature?: number },
   ): Promise<string>;
+  /** Vision-запрос: передаёт изображение (data URL или http(s)-URL) в chat-формате
+   *  OpenAI ({type:"image_url"}). Только для vision-моделей; текстовые модели вернут 400. */
+  completeVision(
+    system: string,
+    user: string,
+    imageUrl: string,
+    opts?: { model?: string; temperature?: number },
+  ): Promise<string>;
   completeJson<T>(
     system: string,
     user: string,
