@@ -122,6 +122,20 @@ func (s *Server) migrate(ctx context.Context) error {
 			uploaded_by TEXT NOT NULL,
 			uploaded_at TIMESTAMPTZ NOT NULL DEFAULT now()
 		)`,
+		// «ЦУП Веб» (2026-09-02): вход по magic-link для браузерных клиентов —
+		// альтернативная доставка того же "ключа" (не доставка по exim, а по
+		// одноразовой ссылке из письма). channel различает устройства, заведённые
+		// плагином, от заведённых веб-порталом — читается plugin-services из JWT
+		// для урезания прав веб-сессий (см. photo-service/lab-service).
+		`ALTER TABLE devices ADD COLUMN IF NOT EXISTS channel TEXT NOT NULL DEFAULT 'plugin'`,
+		`CREATE TABLE IF NOT EXISTS magic_links (
+			token_hash  TEXT PRIMARY KEY,
+			device_id   UUID NOT NULL REFERENCES devices(device_id) ON DELETE CASCADE,
+			status      TEXT NOT NULL DEFAULT 'pending',
+			expires_at  TIMESTAMPTZ NOT NULL,
+			created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+			consumed_at TIMESTAMPTZ
+		)`,
 	}
 	for _, stmt := range stmts {
 		if _, err := s.pool.Exec(ctx, stmt); err != nil {

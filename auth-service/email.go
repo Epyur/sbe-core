@@ -16,6 +16,15 @@ func sendKeyEmail(to, key string) error {
 	return sendMail(to, "Ключ доступа к серверу SBE", body)
 }
 
+// sendMagicLinkEmail — доставка одноразовой ссылки входа для веб-портала
+// («ЦУП Веб», 2026-09-02). Ссылка живёт 5 минут и одноразовая.
+func sendMagicLinkEmail(to, link string) error {
+	body := fmt.Sprintf(
+		"Ссылка для входа в веб-версию SBE (действует 5 минут, только один раз):\n\n%s\n\n"+
+			"Если вы не запрашивали вход, просто проигнорируйте это письмо.\n", link)
+	return sendMail(to, "Вход в веб-версию SBE", body)
+}
+
 // sendMail — универсальная отправка текстового письма (UTF-8) через SMTP.
 // Используется для ключей доступа (sendKeyEmail) и обратной связи (/auth/feedback).
 func sendMail(to, subject, body string) error {

@@ -19,6 +19,16 @@
 
 ## История
 
+- **2026-09-02 — `/app/*` — статика веб-портала «ЦУП Веб».** Новый блок в
+  Caddyfile (`handle_path /app/* { root * /srv/www/app; try_files {path}
+  /index.html; file_server }`) — переиспользует уже смонтированный `./www:/srv/www:ro`
+  (тот же volume, что и `registry.json`/`/plugins/*`), новых сервисов/volume в
+  `docker-compose.yml` не понадобилось. Портал (`web/sbe-web/`, отдельный git-репо,
+  Vue 3 + hash-роутинг) собирается локально (`npm run build`) и заливается на
+  сервер в `./www/app/` вручную (`scp`), без CI. Публичный адрес:
+  `https://epyur.fvds.ru/app/`. См. `auth-service/AGENTS.md` (magic-link) и
+  `docs/superpowers/specs/2026-09-02-sbe-web-portal-design.md`.
+
 - **2026-08-28 — photo-service (Фотобанк):** добавлены `photo-db` (postgres) +
   `photo` (Go), Caddy `/api/photo/*` → `photo:3000` (перед `/api/documents/*` и
   `/api/*`), `.env`: `PHOTO_POSTGRES_*`, `PHOTO_OWNER_EMAIL`, `PHOTO_SERVICE_SECRET`,

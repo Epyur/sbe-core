@@ -58,7 +58,11 @@ func (s *Server) handleServiceToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jwtStr, exp, err := signJWT(ownerEmail, "service:"+callerApp, req.TargetAppID, targetSecret, 5*time.Minute)
+	// channel="service" — не "plugin"/"web": это межсервисный вызов (lab→ekn),
+	// а не сессия конечного пользователя. Проверки channel=="web" в
+	// downstream-сервисах (photo-service/lab-service) на него не сработают,
+	// как и не должны — это не веб-портал.
+	jwtStr, exp, err := signJWT(ownerEmail, "service:"+callerApp, req.TargetAppID, "service", targetSecret, 5*time.Minute)
 	if err != nil {
 		internalError(w, err)
 		return

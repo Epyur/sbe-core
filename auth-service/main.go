@@ -26,6 +26,8 @@ type Server struct {
 	// эндпоинты открыты для бесконечных попыток.
 	activateLim *ipLimiter
 	tokenLim    *ipLimiter
+	// consumeLim — тот же анти-brute-force для /auth/web/consume (magic-link).
+	consumeLim *ipLimiter
 }
 
 func parseAdminEmails() map[string]bool {
@@ -71,6 +73,7 @@ func main() {
 		adminEmails: parseAdminEmails(),
 		activateLim: newIPLimiter(time.Minute, 20),
 		tokenLim:    newIPLimiter(time.Minute, 60),
+		consumeLim:  newIPLimiter(time.Minute, 20),
 	}
 	if err := s.migrate(ctx); err != nil {
 		log.Fatalf("migrate: %v", err)
@@ -84,6 +87,12 @@ func main() {
 	mux.HandleFunc("POST /auth/request-key", s.handleRequestKey)
 	mux.HandleFunc("POST /auth/activate-key", s.handleActivateKey)
 	mux.HandleFunc("POST /auth/token", s.handleToken)
+	// «ЦУП Веб» (2026-09-02): вход по email-ссылке для браузерного портала —
+	// альтернатива request-key/activate-key, доставляющая тот же "ключ" по
+	// одноразовой ссылке вместо exim. Без requireKey — предавторизационные,
+	// как и request-key/activate-key выше.
+	mux.HandleFunc("POST /auth/web/request-link", s.handleRequestLink)
+	mux.HandleFunc("POST /auth/web/consume", s.handleConsumeLink)
 	mux.HandleFunc("GET /auth/devices", s.requireKey(s.handleListDevices))
 	mux.HandleFunc("DELETE /auth/devices/{device_id}", s.requireKey(s.handleRevokeDevice))
 	mux.HandleFunc("GET /auth/presence", s.requireKey(s.handlePresence))
@@ -260,11 +269,11 @@ func (s *Server) handleToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var deviceID, userID, status string
+	var deviceID, userID, status, channel string
 	err := s.pool.QueryRow(r.Context(), `
-SELECT k.device_id, d.user_id, k.status
+SELECT k.device_id, d.user_id, k.status, d.channel
 FROM keys k JOIN devices d ON d.device_id = k.device_id
-WHERE k.key_hash = $1`, sha256Hex(req.Key)).Scan(&deviceID, &userID, &status)
+WHERE k.key_hash = $1`, sha256Hex(req.Key)).Scan(&deviceID, &userID, &status, &channel)
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{"error": "invalid key"})
 		return
@@ -291,7 +300,7 @@ WHERE k.key_hash = $1`, sha256Hex(req.Key)).Scan(&deviceID, &userID, &status)
 	// здесь перед вызовом своего backend — не блокирует выдачу токена при ошибке.
 	s.touchLastSeen(r.Context(), deviceID)
 
-	jwtStr, exp, err := signJWT(userID, deviceID, req.AppID, appSecret, tokenTTL())
+	jwtStr, exp, err := signJWT(userID, deviceID, req.AppID, channel, appSecret, tokenTTL())
 	if err != nil {
 		internalError(w, err)
 		return
@@ -720,6 +729,14 @@ func allowedDomain() string {
 		return d
 	}
 	return "tn.ru"
+}
+
+// publicBaseURL — публичный адрес стека (для ссылок в письмах magic-link).
+func publicBaseURL() string {
+	if v := os.Getenv("PUBLIC_BASE_URL"); v != "" {
+		return strings.TrimSuffix(v, "/")
+	}
+	return "https://epyur.fvds.ru"
 }
 
 func (s *Server) requestLimitExceeded(ctx context.Context, email string) (bool, error) {

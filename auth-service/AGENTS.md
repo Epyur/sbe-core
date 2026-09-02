@@ -45,6 +45,31 @@ docker compose exec auth-service wget -qO- http://localhost:3000/health
 
 ## История
 
+- **2026-09-02 — вход по magic-link для «ЦУП Веб» (веб-портал sbe-photobank+
+  sbe-requests, `web/sbe-web/`).** Не новая модель авторизации, а альтернативная
+  доставка уже существующего «ключа» (`users`/`devices`/`keys`) — по одноразовой
+  ссылке из письма вместо кода, вводимого вручную (request-key/activate-key).
+  - Новая таблица `magic_links` (`token_hash` PK, `device_id`, `status`,
+    `expires_at`, `consumed_at`); `devices.channel` (`'plugin'` default | `'web'`) —
+    читается downstream (photo-service/lab-service) из нового JWT-claim `channel`
+    для урезания прав веб-сессий (запрет записи в Фотобанке, клэмп
+    `superadmin`→`admin` в Заявках).
+  - `POST /auth/web/request-link` (магазин `email`, домен `tn.ru`, тот же
+    rate-limit, что у `request-key`) → генерирует `device_id` сам (у браузера
+    своего нет, в отличие от плагина), магический токен (`newKey()`, хранится
+    только хэш), письмо через `sendMagicLinkEmail` (обёртка над `sendMail`).
+  - `POST /auth/web/consume` (`consumeLim`, тот же паттерн, что
+    `activateLim`/`tokenLim`) — проверка токена (не просрочен, `status='pending'`),
+    помечает `consumed` (одноразовость), выдаёт сразу активный ключ (владение
+    email уже подтверждено переходом по ссылке — отдельного шага активации, в
+    отличие от `request-key`, не нужно).
+  - `signJWT`/`POST /auth/token` — новый параметр/поле `channel` в `jwt.MapClaims`
+    (значение из `devices.channel`), `handleServiceToken` — `channel="service"`
+    (межсервисные вызовы lab→ekn, не сессия конечного пользователя).
+  - `go build`/`go vet`/`go test` — чисто. Задеплоено, E2E пройден живьём
+    (реальная доставка письма, `250 Ok` от mx1.tn.ru, consume/повторный
+    consume/token с проверкой claim `channel` — все тестовые устройства и
+    ключи после проверки удалены из БД).
 - **2026-08-29 — `allowedAppEnvKeys["lab"]` += `LAB_MAIL_DEFAULT_PROJECT_CODE`.**
   Прямое продолжение фичи lab-service (проект по умолчанию для заявок из
   письма без ЕКН, см. `lab-service/AGENTS.md`/`sbe-lims/AGENTS.md`) — новый

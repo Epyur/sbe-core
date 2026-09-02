@@ -55,6 +55,18 @@ https://{$DOMAIN} {
 		file_server
 	}
 
+	# «ЦУП Веб» (2026-09-02) — портал на Vue (web/sbe-web/, отдельный git-репо),
+	# статика собранного dist/ лежит в ./www/app/ (тот же смонтированный /srv/www,
+	# что и registry.json/plugins/*). try_files — фоллбек на index.html для
+	# клиентского роутинга (hash-history не требует его для маршрутизации внутри
+	# портала, но защищает прямой заход на /app/ без хвоста). См.
+	# docs/superpowers/specs/2026-09-02-sbe-web-portal-design.md.
+	handle_path /app/* {
+		root * /srv/www/app
+		try_files {path} /index.html
+		file_server
+	}
+
 	handle {
 		respond "Mailers stack is up"
 	}
