@@ -41,7 +41,8 @@ Source-only пакет (не плагин). Встраивается в кажд
   `mandatory` — только admin), `ackNews(id)`, `getNewsReads(id)` (только admin). См.
   `sbe-apstore/specification.md` разд. 3 и `server_back/auth-service/AGENTS.md`.
 - `SbeLlmApi`:
-  - `getStatus(): { configured: boolean; apiUrl: string }`
+  - `getStatus(): Promise<{ configured: boolean; apiUrl: string }>` (2026-09-02: живой
+    запрос на сервер — ключ провайдера хранится в llm-service, привязан к email)
   - `complete(system, user, opts?: { model?, temperature? }): Promise<string>`
   - `completeJson<T>(system, user, opts?): Promise<T>`
   - `ask(question, opts?: { system?, context?, history?: {role:'user'|'assistant',text}[] , model? }): Promise<string>`

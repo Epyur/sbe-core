@@ -97,6 +97,10 @@ services:
       PHOTO_APP_NAME: Photobank
       PHOTO_OWNER_EMAIL: ${PHOTO_OWNER_EMAIL}
       PHOTO_SERVICE_SECRET: ${PHOTO_SERVICE_SECRET}
+      LLM_APP_ID: llm
+      LLM_APP_NAME: LLM Center
+      LLM_OWNER_EMAIL: ${LLM_OWNER_EMAIL}
+      LLM_SERVICE_SECRET: ${LLM_SERVICE_SECRET}
       ADMIN_EMAILS: ${ADMIN_EMAILS}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -402,6 +406,49 @@ services:
     networks:
       - internal
 
+  llm-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${LLM_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${LLM_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${LLM_POSTGRES_DB}
+    volumes:
+      - llm_pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${LLM_POSTGRES_USER} -d ${LLM_POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  llm:
+    build: ./llm-service
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${LLM_APP_USER}:${LLM_APP_PASSWORD}@llm-db:5432/${LLM_POSTGRES_DB}?sslmode=disable
+      PORT: "3000"
+      JWT_SECRET: ${JWT_SECRET}
+      LLM_APP_ID: llm
+      LLM_APP_NAME: LLM Center
+      LLM_OWNER_EMAIL: ${LLM_OWNER_EMAIL}
+      LLM_SERVICE_SECRET: ${LLM_SERVICE_SECRET}
+      AUTH_SERVICE_URL: http://auth-service:3000
+      # Ключи ПОЛЬЗОВАТЕЛЕЙ шифруются в БД этим отдельным секретом (не путать с
+      # JWT/SERVICE_SECRET выше — те про идентификацию сервиса, этот про
+      # обратимое шифрование чужих API-ключей в состоянии покоя).
+      LLM_KEY_ENCRYPTION_KEY: ${LLM_KEY_ENCRYPTION_KEY}
+      LLM_API_URL: ${LLM_API_URL}
+      LLM_MODELS_URL: ${LLM_MODELS_URL}
+    depends_on:
+      llm-db:
+        condition: service_healthy
+      auth-service:
+        condition: service_started
+    networks:
+      - internal
+
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
@@ -422,6 +469,7 @@ services:
       - contacts
       - agent
       - photo
+      - llm
       - auth-service
     networks:
       - internal
@@ -450,6 +498,7 @@ volumes:
   contacts_pgdata:
   agent_pgdata:
   photo_pgdata:
+  llm_pgdata:
 
 networks:
   internal:

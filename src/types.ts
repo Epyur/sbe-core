@@ -257,7 +257,10 @@ export interface NewsReadStatus {
 /** API центрального LLM-агента. Хранит только apiUrl и API-ключ (secretStorage).
  *  Модели, промты и контекст передаёт потребитель — центр о них ничего не знает. */
 export interface SbeLlmApi {
-  getStatus(): { configured: boolean; apiUrl: string };
+  /** 2026-09-02: ключ теперь хранится на сервере (привязан к email пользователя,
+   *  см. llm-service/AGENTS.md) — статус стал живым запросом, не локальной
+   *  проверкой, поэтому единственный метод интерфейса, ставший асинхронным. */
+  getStatus(): Promise<{ configured: boolean; apiUrl: string }>;
   complete(
     system: string,
     user: string,

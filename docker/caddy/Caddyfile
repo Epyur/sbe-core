@@ -30,6 +30,10 @@ https://{$DOMAIN} {
 		reverse_proxy photo:3000
 	}
 
+	handle /api/llm/* {
+		reverse_proxy llm:3000
+	}
+
 	handle /api/* {
 		reverse_proxy backend:3000
 	}

@@ -45,6 +45,15 @@ docker compose exec auth-service wget -qO- http://localhost:3000/health
 
 ## История
 
+- **2026-09-02 — регистрация приложения `llm` (`seed.go`).** Новый сервис
+  `sbe-llm/llm-service` (хранение ключа API провайдера ИИ, привязанного к email
+  пользователя, см. `sbe-llm/llm-service/AGENTS.md`) зарегистрирован тем же
+  `seedApp()`, что и остальные (`photo`/`lab`/`ekn`/`contacts`/`agent`) — env
+  `LLM_APP_ID`/`LLM_APP_NAME`/`LLM_OWNER_EMAIL`/`LLM_SERVICE_SECRET`. Никакой
+  модели ролей у `llm` нет — валидного JWT с `app_id=llm` достаточно (все операции
+  скопированы на email из токена). Развёрнуто, `docker compose up -d --build
+  auth-service`, apps-таблица подтверждена.
+
 - **2026-09-02 — вход по magic-link для «ЦУП Веб» (веб-портал sbe-photobank+
   sbe-requests, `web/sbe-web/`).** Не новая модель авторизации, а альтернативная
   доставка уже существующего «ключа» (`users`/`devices`/`keys`) — по одноразовой

@@ -66,11 +66,18 @@ func (s *Server) seedApps(ctx context.Context) error {
 		os.Getenv("PHOTO_SERVICE_SECRET")); err != nil {
 		return err
 	}
-	return seedApp(ctx, s,
+	if err := seedApp(ctx, s,
 		envOr("AGENT_APP_ID", "agent"),
 		envOr("AGENT_APP_NAME", "Agent"),
 		os.Getenv("AGENT_OWNER_EMAIL"),
-		os.Getenv("AGENT_SERVICE_SECRET"))
+		os.Getenv("AGENT_SERVICE_SECRET")); err != nil {
+		return err
+	}
+	return seedApp(ctx, s,
+		envOr("LLM_APP_ID", "llm"),
+		envOr("LLM_APP_NAME", "LLM Center"),
+		os.Getenv("LLM_OWNER_EMAIL"),
+		os.Getenv("LLM_SERVICE_SECRET"))
 }
 
 func envOr(key, fallback string) string {

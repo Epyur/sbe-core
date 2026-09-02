@@ -4,8 +4,8 @@
 
 | Файл | Что это |
 |---|---|
-| `docker-compose.yml` | Сервисы: `postgres` (БД mailers), `backend` (mailer-service), `auth-db` (БД auth), `auth-service`, `documents-db`+`documents`, `lab-db`+`lab`, `ekn-db`+`ekn`, `contacts-db`+`contacts`, `agent-db`+`agent`+`agent-mermaid`, `photo-db`+`photo`, `caddy` (443), `portainer` (127.0.0.1:9000). Сеть `internal` |
-| `caddy/Caddyfile` | TLS reverse-proxy `epyur.fvds.ru`: `/api/ekn/*` → ekn, `/api/agent/*` → agent, `/api/contacts/*` → contacts, `/api/lab/*` → lab, `/api/documents/*` → documents, `/api/photo/*` → photo, `/api/*` → backend, `/auth/*`, `/apps/*`, `/health` → auth-service |
+| `docker-compose.yml` | Сервисы: `postgres` (БД mailers), `backend` (mailer-service), `auth-db` (БД auth), `auth-service`, `documents-db`+`documents`, `lab-db`+`lab`, `ekn-db`+`ekn`, `contacts-db`+`contacts`, `agent-db`+`agent`+`agent-mermaid`, `photo-db`+`photo`, `llm-db`+`llm`, `caddy` (443), `portainer` (127.0.0.1:9000). Сеть `internal` |
+| `caddy/Caddyfile` | TLS reverse-proxy `epyur.fvds.ru`: `/api/ekn/*` → ekn, `/api/agent/*` → agent, `/api/contacts/*` → contacts, `/api/lab/*` → lab, `/api/documents/*` → documents, `/api/photo/*` → photo, `/api/llm/*` → llm, `/api/*` → backend, `/auth/*`, `/apps/*`, `/health` → auth-service |
 | `nftables.conf` | Файрвол (вместо сломанного UFW): 22/80/443/25 и пр. |
 | `.env.example` | Шаблон переменных (заглушки). Реальный `.env` — только на сервере |
 
@@ -18,6 +18,22 @@
 - Portainer: таймаут сессии; доступ только через SSH-туннель на 127.0.0.1:9000.
 
 ## История
+
+- **2026-09-02 — llm-db + llm (LLM Center: серверное хранение ключа API,
+  привязанного к пользователю).** Добавлены `llm-db` (postgres) + `llm` (Go,
+  `sbe-llm/llm-service/`) — первая реальная БД у этого сервиса (таблица
+  `user_llm_keys`: email → AES-256-GCM-шифрованный ключ провайдера). Caddy
+  `/api/llm/*` → `llm:3000` (перед общим `/api/*`). `.env`: `LLM_POSTGRES_*`,
+  `LLM_OWNER_EMAIL`, `LLM_SERVICE_SECRET`, `LLM_KEY_ENCRYPTION_KEY` (`openssl
+  rand -base64 32`), `LLM_APP_USER`/`LLM_APP_PASSWORD`, `LLM_API_URL`,
+  `LLM_MODELS_URL` — секреты сгенерированы прямо на сервере. Роль `llm_app`
+  создана вручную (`CREATE ROLE ... LOGIN`, `GRANT CREATE, USAGE ON SCHEMA
+  public` — без `ALTER DEFAULT PRIVILEGES`: сервис создаёт свои таблицы сам и
+  становится их владельцем). `auth-service` пересобран (регистрация `llm` в
+  `seed.go`, см. `auth-service/AGENTS.md`). E2E зелёный на реальном ключе
+  chadgpt.ru: сохранение → статус → чат-запрос → удаление → 400 без ключа.
+  Бэкапы `docker-compose.yml.bak-llm-20260902`, `Caddyfile.bak-llm-20260902`,
+  `.env.bak-llm-20260902`.
 
 - **2026-09-02 — `/app/*` — статика веб-портала «ЦУП Веб».** Новый блок в
   Caddyfile (`handle_path /app/* { root * /srv/www/app; try_files {path}
