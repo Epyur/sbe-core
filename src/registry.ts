@@ -21,10 +21,20 @@ export function pluginFileUrl(entry: Pick<RegistryPluginEntry, 'dir' | 'repo' | 
   return rawUrl(entry.repo, entry.branch || 'main', file);
 }
 
+/** Разбирает сегмент версии в число: "5" → 5, "5b" → 5 (буквенный суффикс —
+ * локальная пометка «ветка backend не синхронизирована с main», см. корневой
+ * AGENTS.md — не часть числового значения). `Number("5b")` дал бы `NaN`, а
+ * `NaN || 0` в сравнении ниже тихо обнулял бы сегмент — версия с суффиксом
+ * (реально более новая) выглядела бы СТАРШЕ и ЦУП ложно предлагал бы откат
+ * на версию с main. */
+function parseVersionSegment(seg: string): number {
+  return parseInt(seg, 10) || 0;
+}
+
 /** Семантическое сравнение версий x.y.z: true, если remote новее local. */
 export function isNewer(remote: string, local: string): boolean {
-  const r = remote.split('.').map(Number);
-  const l = local.split('.').map(Number);
+  const r = remote.split('.').map(parseVersionSegment);
+  const l = local.split('.').map(parseVersionSegment);
   for (let i = 0; i < Math.max(r.length, l.length); i++) {
     const rv = r[i] || 0;
     const lv = l[i] || 0;
