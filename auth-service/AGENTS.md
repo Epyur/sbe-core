@@ -27,6 +27,9 @@
 | POST | `/auth/news/{id}/ack` | отметить прочитанным (Bearer <key>) |
 | GET | `/auth/news/{id}/reads` | кто из адресатов прочитал — только admin (Bearer <key>) |
 | POST | `/auth/feedback` | обратная связь `{plugin_id, text}` (Bearer <key>): письмо владельцу плагина (ownerEmail из реестра) или, при пустом `plugin_id` («идея»), собственнику ЦУП (первый `ADMIN_EMAILS`); журнал `feedback_messages` |
+| GET | `/registry.json` | публичный реестр плагинов — базовый файл (`/srv/www/registry.json`) + `registry_additions` + оверлей `registry_file_overrides` (`hashes`/`selfHosted`/`uploadedBy`/`uploadedAt`, см. `registry_admin.go` `handleRegistryJSON`) |
+| GET/POST/DELETE | `/auth/registry` | admin-CRUD добавленных записей реестра (`registry_additions`) — регистрация НОВОГО плагина, не загрузка файлов |
+| POST | `/auth/registry/upload` | загрузка `manifest.json`/`main.js`/`styles.css` плагина (multipart, поле `dir` + файлы) — только владелец плагина (`ownerEmail` записи) или admin; сервер сам считает SHA-256 принятых байт, пишет в `/srv/www/plugins/<dir>/` и `registry_file_overrides` (см. `docs/superpowers/specs/2026-08-29-sbe-plugin-file-upload-design.md`) |
 | POST | `/apps/register` | регистрация plugin-service |
 
 ## Конфиг (env)
