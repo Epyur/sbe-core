@@ -116,6 +116,16 @@ export class StoreManager {
   }
 
   private async apply(id: string, required: boolean): Promise<void> {
+    // Реестр в this.registry мог быть загружен давно (при старте Obsidian или
+    // последнем открытии магазина) — если хэши на сервере с тех пор обновили
+    // (новый релиз), entry.hashes здесь оказался бы устаревшим, а
+    // installPlugin скачал бы уже НОВЫЙ файл → ложное "контрольная сумма не
+    // совпадает" (живой баг, 2026-09-04: пользователь ловил его после каждого
+    // обновления реестра ЦУП, пока не перезапускал Obsidian). Обновляем реестр
+    // непосредственно перед использованием entry.hashes, а не только после
+    // установки (существующий this.refresh() ниже остаётся — он актуализирует
+    // localManifests/cards уже installed-плагина).
+    await this.refresh();
     const entry = this.findEntry(id);
     if (!entry) throw new Error(`Плагин «${id}» не найден в реестре`);
     if (required && !entry.required) {
